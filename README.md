@@ -122,7 +122,7 @@ DELETE FROM products WHERE id = <商品 id>;
 
 | 服務 | 網址 |
 |---|---|
-| API 文件 | http://localhost:8000/docs 、 http://localhost:8000/redoc |
+| API 文件 | http://localhost:8001/docs 、 http://localhost:8001/redoc |
 | phpMyAdmin | http://localhost:8080 |
 | Flower（Celery 任務監控） | http://localhost:5555 |
 | RabbitMQ 管理介面 | http://localhost:15672 |

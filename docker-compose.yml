@@ -76,7 +76,7 @@ services:
       DB_PORT: 3306
       TZ: Asia/Taipei
     ports:
-      - "8000:8000"
+      - "8001:8000"
     depends_on:
       mysql:
         condition: service_healthy
