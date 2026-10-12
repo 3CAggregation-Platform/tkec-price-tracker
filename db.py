@@ -7,7 +7,7 @@ load_dotenv()
 
 DB_CONFIG = {
     "host": os.getenv("DB_HOST", "127.0.0.1"),
-    "port": int(os.getenv("DB_PORT", 3307)),  # 對應你 docker-compose 裡的 "3307:3306"
+    "port": int(os.getenv("DB_PORT", 13306)),  # 對應你 docker-compose 裡的 "13306:3306"
     "user": os.getenv("MYSQL_USER", "tk3c_user"),
     "password": os.getenv("MYSQL_PASSWORD"),
     "database": os.getenv("MYSQL_DATABASE"),

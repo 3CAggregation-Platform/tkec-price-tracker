@@ -11,10 +11,12 @@ services:
       TZ: Asia/Taipei
     command: --default-time-zone='+08:00'
     ports:
-      - "3307:3306"
+      - "13306:3306"
     volumes:
       - mysql_data:/var/lib/mysql
-      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+      # init.sql 只在資料庫第一次建立時需要；單檔掛載在 Docker Desktop 重開後常失效，導致 MySQL 起不來
+      # 若要從空的 volume 重建資料庫，再暫時把下一行打開
+      # - ./init.sql:/docker-entrypoint-initdb.d/init.sql
     healthcheck:
       test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$$MYSQL_ROOT_PASSWORD --silent"]
       interval: 5s
