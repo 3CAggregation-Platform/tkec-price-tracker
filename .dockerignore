@@ -4,3 +4,13 @@ __pycache__/
 *.pyc
 .git/
 .gitignore
+
+# 密碼不能打包進 image（image 會 push 到 Docker Hub），改由 env_file 在部署時帶入
+.env
+
+# 執行時產生的檔案，不需要打包
+*.csv
+celerybeat-data/
+celerybeat-schedule
+.vscode/
+.claude/

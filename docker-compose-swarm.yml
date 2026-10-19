@@ -1,0 +1,172 @@
+# Docker Swarm 部署版本（開發時仍用 docker-compose.yml）
+#
+# 部署前先載入 .env 的變數，再指定 image 版本：
+#   set -a; source .env; set +a
+#   DOCKER_IMAGE_VERSION=0.0.1 docker stack deploy --with-registry-auth -c docker-compose-swarm.yml tk3c
+#
+# 和 docker-compose.yml 的差異：
+# - 不能用 build，改用事先 push 到 Docker Hub 的 image
+# - 程式碼打包在 image 裡，不再掛載 .:/app，也不用 --reload
+# - container_name / restart / depends_on 在 swarm 會被忽略，改用 deploy 設定
+#   （MySQL 比 worker 晚起來時，由 tasks.py 的自動重試處理）
+version: '3.8'  # 3.8 才支援 external volume 指定 name
+
+services:
+
+  mysql:
+    image: mysql:8.0
+    command: --default-time-zone='+08:00'
+    ports:
+      - "13306:3306"  # 3307 落在 Windows 保留的 port 範圍，改用 13306
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: tk3c_user
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      TZ: Asia/Taipei
+    volumes:
+      - mysql_data:/var/lib/mysql  # 沿用 docker compose 時期的資料
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$$MYSQL_ROOT_PASSWORD --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+    deploy:
+      mode: replicated
+      replicas: 1  # 資料庫只能有 1 個副本，多個會搶同一份資料
+      restart_policy:
+        condition: any
+      placement:
+        constraints: [node.role==manager]
+    networks:
+      - tk3c_swarm_network
+
+  phpmyadmin:
+    image: phpmyadmin:5.2
+    ports:
+      - "8080:80"
+    environment:
+      PMA_HOST: mysql
+      PMA_USER: root
+      PMA_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+    deploy:
+      mode: replicated
+      replicas: 1
+      restart_policy:
+        condition: any
+      placement:
+        constraints: [node.role==manager]
+    networks:
+      - tk3c_swarm_network
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASS}
+    deploy:
+      mode: replicated
+      replicas: 1
+      restart_policy:
+        condition: any
+      placement:
+        constraints: [node.role==manager]
+    networks:
+      - tk3c_swarm_network
+
+  flower:
+    image: mher/flower:2.0
+    command: celery --broker=amqp://${RABBITMQ_USER}:${RABBITMQ_PASS}@rabbitmq:5672// flower
+    environment:
+      TZ: Asia/Taipei
+    ports:
+      - "5555:5555"
+    deploy:
+      mode: replicated
+      replicas: 1
+      restart_policy:
+        condition: any
+      placement:
+        constraints: [node.role==manager]
+    networks:
+      - tk3c_swarm_network
+
+  api:
+    image: pennyliu32/tk3c-price-tracker:${DOCKER_IMAGE_VERSION}
+    command: uvicorn main:app --host 0.0.0.0 --port 8000
+    env_file:
+      - .env  # 部署時讀取本機的 .env，密碼不會進到 image
+    environment:
+      DB_HOST: mysql
+      DB_PORT: 3306
+      TZ: Asia/Taipei
+    ports:
+      - "8001:8000"  # 8000 被課程的 Portainer 佔用
+    deploy:
+      mode: replicated
+      replicas: 1
+      restart_policy:
+        condition: any
+      placement:
+        constraints: [node.role==manager]
+    networks:
+      - tk3c_swarm_network
+
+  celery-worker:
+    image: pennyliu32/tk3c-price-tracker:${DOCKER_IMAGE_VERSION}
+    hostname: "worker.{{.Task.Slot}}"  # 固定 worker 名稱，Flower 不會再出現舊的 Offline worker
+    command: celery -A celery_app worker --loglevel=info -E --hostname=%h
+    env_file:
+      - .env
+    environment:
+      DB_HOST: mysql
+      DB_PORT: 3306
+      RABBITMQ_HOST: rabbitmq
+      TZ: Asia/Taipei
+    deploy:
+      mode: replicated
+      replicas: 1  # 想多開 worker 時改這裡
+      restart_policy:
+        condition: any
+      placement:
+        constraints: [node.role==manager]
+    networks:
+      - tk3c_swarm_network
+
+  celery-beat:
+    image: pennyliu32/tk3c-price-tracker:${DOCKER_IMAGE_VERSION}
+    command: celery -A celery_app beat --loglevel=info --schedule=/app/celerybeat-data/celerybeat-schedule
+    env_file:
+      - .env
+    environment:
+      DB_HOST: mysql
+      DB_PORT: 3306
+      RABBITMQ_HOST: rabbitmq
+      TZ: Asia/Taipei
+    volumes:
+      - celerybeat_data:/app/celerybeat-data
+    deploy:
+      mode: replicated
+      replicas: 1  # 一定只能 1 個，多個 beat 會重複發送排程，同一類別一天被爬好幾次
+      restart_policy:
+        condition: any
+      placement:
+        constraints: [node.role==manager]
+    networks:
+      - tk3c_swarm_network
+
+networks:
+  tk3c_swarm_network:
+    external: true  # 需先手動建立：docker network create --scope=swarm --driver=overlay tk3c_swarm_network
+
+volumes:
+  mysql_data:
+    external: true
+    name: tk3c-price-tracker_mysql_data  # docker compose 建立的 volume，資料都在這裡
+  celerybeat_data:
+    external: true
+    name: tk3c-price-tracker_celerybeat_data

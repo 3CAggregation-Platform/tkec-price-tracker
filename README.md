@@ -25,7 +25,8 @@ tk3c-price-tracker/
 │   ├── tv_search.py           # 電視分類爬蟲
 │   ├── airfryer_search.py     # 氣炸鍋分類爬蟲
 │   └── robotvacuum_search.py  # 掃地機器人分類爬蟲
-├── docker-compose.yml         # MySQL 容器設定
+├── docker-compose.yml         # 開發用（docker compose）
+├── docker-compose-swarm.yml   # 部署用（docker swarm）
 ├── init.sql                   # 資料庫初始化 schema
 └── .gitignore
 ```
@@ -127,11 +128,82 @@ DELETE FROM products WHERE id = <商品 id>;
 | Flower（Celery 任務監控） | http://localhost:5555 |
 | RabbitMQ 管理介面 | http://localhost:15672 |
 
+## Docker Swarm 部署
+
+開發時用 `docker-compose.yml`，部署時用 `docker-compose-swarm.yml`。兩者共用同一個資料庫 volume，切換不會遺失資料，但**不能同時執行**（port 會衝突，兩個 beat 也會重複發送排程）。
+
+和 compose 版本的差異：
+
+- swarm 不支援 `build`，要先 build image 並 push 到 Docker Hub
+- 程式碼打包在 image 裡，沒有 `--reload`，改程式碼後要重新 build 並升版
+- `.env` 不會打包進 image（見 `.dockerignore`），部署時才透過 `env_file` 帶入
+- swarm 會忽略 `depends_on`，MySQL 晚啟動時由 `tasks.py` 的自動重試處理
+
+### 第一次部署
+
+```bash
+# 1. 確認 swarm 已啟動（看到 Leader 即可）
+docker node ls
+
+# 2. build image，並確認 /app 裡沒有 .env
+docker build -t pennyliu32/tk3c-price-tracker:0.0.1 .
+docker run --rm pennyliu32/tk3c-price-tracker:0.0.1 ls -a /app
+
+# 3. push 到 Docker Hub
+docker login -u pennyliu32
+docker push pennyliu32/tk3c-price-tracker:0.0.1
+
+# 4. 建立專題用的 overlay 網路（只需建立一次）
+docker network create --scope=swarm --driver=overlay tk3c_swarm_network
+
+# 5. 停掉 compose 版本（不要加 -v，會刪掉資料庫）
+docker compose down
+
+# 6. 載入 .env 變數後部署 stack
+set -a; source .env; set +a
+DOCKER_IMAGE_VERSION=0.0.1 docker stack deploy --with-registry-auth -c docker-compose-swarm.yml tk3c
+```
+
+### 更新程式碼
+
+```bash
+docker build -t pennyliu32/tk3c-price-tracker:0.0.2 .
+docker push pennyliu32/tk3c-price-tracker:0.0.2
+set -a; source .env; set +a
+DOCKER_IMAGE_VERSION=0.0.2 docker stack deploy --with-registry-auth -c docker-compose-swarm.yml tk3c
+```
+
+### 常用指令（swarm 版）
+
+swarm 的 container 名稱會帶亂數（例如 `tk3c_mysql.1.xxxx`），所以改用 service 名稱或 `$(docker ps -q -f name=...)` 找 container。
+
+```bash
+# 查看各 service 狀態（REPLICAS 都要是 1/1）
+docker stack services tk3c
+
+# 查看爬蟲任務執行結果與錯誤
+docker service logs --since 1h tk3c_celery-worker 2>&1 | grep -E "succeeded|raised|ERROR"
+
+# 手動觸發爬蟲（補跑當天資料）
+docker exec $(docker ps -q -f name=tk3c_celery-worker) python -c "
+from celery_app import app
+for t in ['crawl_fridge', 'crawl_tv', 'crawl_airfryer', 'crawl_robotvacuum']:
+    print(t, app.send_task(t).id)"
+
+# 進入 MySQL
+docker exec -it $(docker ps -q -f name=tk3c_mysql) sh -c 'mysql --default-character-set=utf8mb4 -uroot -p"$MYSQL_ROOT_PASSWORD" "$MYSQL_DATABASE"'
+
+# 移除 stack，改回 compose 版本
+docker stack rm tk3c
+docker compose up -d
+```
+
 ## 目前進度
 
 - [x] 完成冰箱、電視、氣炸鍋、掃地機器人四大分類的爬蟲程式
 - [x] MySQL 資料庫架構設計（products + price_history）
 - [x] 排程自動化（規劃使用 Celery + RabbitMQ + Flower）
+- [x] 使用 Docker Swarm 部署
 - [ ] 價格走勢查詢介面
 
 ## 未來規劃
