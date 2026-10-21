@@ -25,6 +25,8 @@ CREATE TABLE IF NOT EXISTS price_history (
     discount VARCHAR(20),
     price DECIMAL(10,2) NOT NULL,
     original_price DECIMAL(10,2),
+    rating DECIMAL(2,1),       -- 平均評價星數，燦坤沒有評價、PChome 無人評價時為 NULL
+    review_count INT,          -- 評價則數
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
     UNIQUE KEY uk_product_date (product_id, crawl_date),

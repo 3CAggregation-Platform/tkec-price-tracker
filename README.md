@@ -16,7 +16,8 @@
 - **資料庫**：MySQL（透過 Docker 啟動）
 - **資料表設計**：
   - `products`：商品主檔（平台、商品編號、名稱、分類等；平台 + 商品編號為唯一鍵）
-  - `price_history`：每日價格歷史（依商品編號關聯，記錄每次爬取的價格與時間）
+  - `price_history`：每日價格歷史（依商品編號關聯，記錄每次爬取的價格、排名與評價；同一天重跑只保留最後一次）
+    - `rating` / `review_count`：平均星數與評價則數，僅 PChome 有；燦坤及無人評價的商品為 NULL
 
 ## 專案結構
 
@@ -82,6 +83,7 @@ tk3c-price-tracker/
 
    ```bash
    docker exec -i tk3c_mysql sh -c 'mysql -uroot -p"$MYSQL_ROOT_PASSWORD"' < database/migrations/001_add_platform.sql
+   docker exec -i tk3c_mysql sh -c 'mysql -uroot -p"$MYSQL_ROOT_PASSWORD"' < database/migrations/002_add_rating.sql
    ```
 
 ## 常用指令

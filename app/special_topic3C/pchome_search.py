@@ -148,6 +148,8 @@ def to_row(prod, rank, category, filter_module, today):
         "折扣": calc_discount(price, original_price),
         "售價": f"${price}" if price else "",
         "原價": f"${original_price}" if original_price else "",
+        "評價": prod.get("ratingValue"),  # 沒人評價過的商品 API 回傳 None
+        "評價數": prod.get("reviewCount"),
         "商品詳細": prod.get("Describe", "").strip(),
         "連結": PRODUCT_URL.format(prod["Id"]),
     }
@@ -193,4 +195,4 @@ def run_pchome_crawler(category):
 if __name__ == "__main__":
     category = sys.argv[1] if len(sys.argv) > 1 else "冰箱"
     for row in run_pchome_crawler(category):
-        print(row["排名"], row["廠牌"], row["型號"], row["售價"], row["折扣"], row["商品名稱"][:40])
+        print(row["排名"], row["廠牌"], row["型號"], row["售價"], row["折扣"], row["評價"], row["評價數"], row["商品名稱"][:40])

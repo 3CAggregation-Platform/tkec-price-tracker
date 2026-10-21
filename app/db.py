@@ -40,6 +40,20 @@ def save_products_to_db(rows):
 
     try:
         with conn.cursor() as cursor:
+            # 同一天重跑時，先清掉這個平台 + 分類當天的舊資料，只保留最後一次的排名
+            # 否則排名變動後，掉出前 20 名的商品會留著舊排名，當天筆數超過 20、排名重複
+            for platform, category, crawl_date in {
+                (row.get("平台", "tk3c"), row.get("分類"), row.get("抓取日期")) for row in rows
+            }:
+                cursor.execute(
+                    """
+                    DELETE h FROM price_history h
+                    JOIN products p ON p.id = h.product_id
+                    WHERE p.platform = %s AND p.category = %s AND h.crawl_date = %s
+                    """,
+                    (platform, category, crawl_date),
+                )
+
             for row in rows:
                 product_code = row.get("商品編號")
                 if not product_code:
@@ -88,13 +102,15 @@ def save_products_to_db(rows):
 
                 cursor.execute(
                     """
-                    INSERT INTO price_history (product_id, crawl_date, `rank`, discount, price, original_price)
-                    VALUES (%s, %s, %s, %s, %s, %s)
+                    INSERT INTO price_history (product_id, crawl_date, `rank`, discount, price, original_price, rating, review_count)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
                     ON DUPLICATE KEY UPDATE
                         `rank` = VALUES(`rank`),
                         discount = VALUES(discount),
                         price = VALUES(price),
-                        original_price = VALUES(original_price)
+                        original_price = VALUES(original_price),
+                        rating = VALUES(rating),
+                        review_count = VALUES(review_count)
                     """,
                     (
                         product_id,
@@ -103,6 +119,8 @@ def save_products_to_db(rows):
                         row.get("折扣"),
                         price,
                         parse_money(row.get("原價")),
+                        row.get("評價"),  # 燦坤沒有這個欄位，會是 None（寫入 NULL）
+                        row.get("評價數"),
                     ),
                 )
                 success += 1

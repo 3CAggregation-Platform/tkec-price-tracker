@@ -64,7 +64,7 @@ def product_price_history(product_id: int):
         raise HTTPException(status_code=404, detail="商品不存在")
 
     return query(
-        "SELECT crawl_date, `rank`, discount, price, original_price "
+        "SELECT crawl_date, `rank`, discount, price, original_price, rating, review_count "
         "FROM price_history WHERE product_id = %s ORDER BY crawl_date",
         (product_id,),
     )
