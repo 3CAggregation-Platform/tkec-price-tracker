@@ -47,11 +47,12 @@ def save_products_to_db(rows):
                     skipped += 1
                     continue
 
-                # 1. Upsert products
+                # 1. Upsert products（同一個商品編號在不同平台是不同商品）
+                platform = row.get("平台", "tk3c")
                 cursor.execute(
                     """
-                    INSERT INTO products (product_code, category, brand, model, name, link, specs)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s)
+                    INSERT INTO products (platform, product_code, category, brand, model, name, link, specs)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
                     ON DUPLICATE KEY UPDATE
                         category = VALUES(category),
                         brand = VALUES(brand),
@@ -61,6 +62,7 @@ def save_products_to_db(rows):
                         specs = VALUES(specs)
                     """,
                     (
+                        platform,
                         product_code,
                         row.get("分類"),
                         row.get("廠牌"),
@@ -72,7 +74,8 @@ def save_products_to_db(rows):
                 )
 
                 cursor.execute(
-                    "SELECT id FROM products WHERE product_code = %s", (product_code,)
+                    "SELECT id FROM products WHERE platform = %s AND product_code = %s",
+                    (platform, product_code),
                 )
                 product_id = cursor.fetchone()[0]
 
@@ -114,17 +117,17 @@ def save_products_to_db(rows):
 
     return success, skipped
 
-def log_crawl_run(category, item_count, success_count, skipped_count, status, message=""):
+def log_crawl_run(category, item_count, success_count, skipped_count, status, message="", platform="tk3c"):
     """記錄一次爬蟲執行結果，不管資料內容有沒有變動都會寫入一筆"""
     conn = get_connection()
     try:
         with conn.cursor() as cursor:
             cursor.execute(
                 """
-                INSERT INTO crawl_log (category, item_count, success_count, skipped_count, status, message)
-                VALUES (%s, %s, %s, %s, %s, %s)
+                INSERT INTO crawl_log (platform, category, item_count, success_count, skipped_count, status, message)
+                VALUES (%s, %s, %s, %s, %s, %s, %s)
                 """,
-                (category, item_count, success_count, skipped_count, status, message),
+                (platform, category, item_count, success_count, skipped_count, status, message),
             )
         conn.commit()
     except Exception as e:

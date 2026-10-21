@@ -1,10 +1,12 @@
 # TK3C 比價引擎（3C 搜索引擎）
 
-爬取燦坤（tk3c.com）的冰箱、電視、氣炸鍋、掃地機器人分類排名與價格，記錄每日價格歷史，可用於後續查詢價格走勢。
+爬取燦坤（tk3c.com）與 PChome 24h 的冰箱、電視、氣炸鍋、掃地機器人分類排名與價格，記錄每日價格歷史，可用於比較不同平台的價格與後續查詢價格走勢。
 
 ## 功能
 
-- 針對四大分類（冰箱、電視、氣炸鍋、掃地機器人）自動爬取商品排名與即時價格
+- 針對兩個平台（燦坤、PChome）的四大分類（冰箱、電視、氣炸鍋、掃地機器人）自動爬取商品排名與即時價格
+  - 燦坤：搜尋頁的排行榜區塊，不足 20 筆再從搜尋結果補齊
+  - PChome：搜尋 API 依銷量排序，以館別代碼與分類代碼排除配件後取前 20 筆
 - 使用 MySQL 儲存商品主檔與每日價格歷史，方便追蹤價格變化趨勢
 - 使用 Docker 容器化資料庫，方便部署與環境一致性
 
@@ -13,7 +15,7 @@
 - **爬蟲**：Python
 - **資料庫**：MySQL（透過 Docker 啟動）
 - **資料表設計**：
-  - `products`：商品主檔（商品編號、名稱、分類等）
+  - `products`：商品主檔（平台、商品編號、名稱、分類等；平台 + 商品編號為唯一鍵）
   - `price_history`：每日價格歷史（依商品編號關聯，記錄每次爬取的價格與時間）
 
 ## 專案結構
@@ -24,7 +26,9 @@ tk3c-price-tracker/
 │   ├── fridge_search.py       # 冰箱分類爬蟲
 │   ├── tv_search.py           # 電視分類爬蟲
 │   ├── airfryer_search.py     # 氣炸鍋分類爬蟲
-│   └── robotvacuum_search.py  # 掃地機器人分類爬蟲
+│   ├── robotvacuum_search.py  # 掃地機器人分類爬蟲
+│   └── pchome_search.py       # PChome 四大分類爬蟲（共用燦坤的配件過濾規則）
+├── migrations/                # 既有資料庫的結構變更（新建資料庫只需 init.sql）
 ├── docker-compose.yml         # 開發用（docker compose）
 ├── docker-compose-swarm.yml   # 部署用（docker swarm）
 ├── init.sql                   # 資料庫初始化 schema
@@ -88,12 +92,15 @@ docker logs --tail 20 tk3c_mysql
 
 ### 手動觸發爬蟲（補跑當天資料）
 
-排程時間錯過、或任務失敗時，可以手動送出任務：
+排程時間：燦坤 20:00 起、PChome 20:40 起，每 10 分鐘一個分類（見 `celery_app.py`）。
+
+排程時間錯過、或任務失敗時，可以手動送出任務（只補跑部分分類時，刪掉不需要的任務名稱即可）：
 
 ```bash
 docker exec tk3c_celery_worker python -c "
 from celery_app import app
-for t in ['crawl_fridge', 'crawl_tv', 'crawl_airfryer', 'crawl_robotvacuum']:
+for t in ['crawl_fridge', 'crawl_tv', 'crawl_airfryer', 'crawl_robotvacuum',
+          'crawl_pchome_fridge', 'crawl_pchome_tv', 'crawl_pchome_airfryer', 'crawl_pchome_robotvacuum']:
     print(t, app.send_task(t).id)"
 ```
 
@@ -187,7 +194,8 @@ docker service logs --since 1h tk3c_celery-worker 2>&1 | grep -E "succeeded|rais
 # 手動觸發爬蟲（補跑當天資料）
 docker exec $(docker ps -q -f name=tk3c_celery-worker) python -c "
 from celery_app import app
-for t in ['crawl_fridge', 'crawl_tv', 'crawl_airfryer', 'crawl_robotvacuum']:
+for t in ['crawl_fridge', 'crawl_tv', 'crawl_airfryer', 'crawl_robotvacuum',
+          'crawl_pchome_fridge', 'crawl_pchome_tv', 'crawl_pchome_airfryer', 'crawl_pchome_robotvacuum']:
     print(t, app.send_task(t).id)"
 
 # 進入 MySQL

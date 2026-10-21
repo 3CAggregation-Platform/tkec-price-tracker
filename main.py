@@ -38,17 +38,21 @@ def health():
 
 
 @app.get("/products")
-def list_products(category: Optional[str] = None):
-    """列出所有商品，可用 ?category=電視 篩選分類"""
+def list_products(category: Optional[str] = None, platform: Optional[str] = None):
+    """列出所有商品，可用 ?category=電視 篩選分類、?platform=pchome 篩選平台（tk3c / pchome）"""
+    conditions = []
+    params = []
     if category:
-        return query(
-            "SELECT id, product_code, category, brand, model, name, link, "
-            "first_seen_at, updated_at FROM products WHERE category = %s ORDER BY id",
-            (category,),
-        )
+        conditions.append("category = %s")
+        params.append(category)
+    if platform:
+        conditions.append("platform = %s")
+        params.append(platform)
+    where = f"WHERE {' AND '.join(conditions)} " if conditions else ""
     return query(
-        "SELECT id, product_code, category, brand, model, name, link, "
-        "first_seen_at, updated_at FROM products ORDER BY id"
+        "SELECT id, platform, product_code, category, brand, model, name, link, "
+        f"first_seen_at, updated_at FROM products {where}ORDER BY id",
+        params,
     )
 
 
@@ -73,6 +77,7 @@ def price_changes():
         """
         SELECT
             p.id AS product_id,
+            p.platform,
             p.category,
             p.brand,
             p.name,

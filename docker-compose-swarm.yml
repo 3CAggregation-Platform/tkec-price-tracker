@@ -63,7 +63,7 @@ services:
   rabbitmq:
     image: rabbitmq:3-management
     ports:
-      - "5672:5672"
+      # 5672 不對外開放：容器之間走內部網路即可，且這個 port 常被 Windows 保留導致整個 service 的 port 開不了
       - "15672:15672"
     environment:
       RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}

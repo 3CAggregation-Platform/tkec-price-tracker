@@ -2,6 +2,7 @@ USE tk3c_price_tracker;
 
 CREATE TABLE IF NOT EXISTS products (
     id INT PRIMARY KEY AUTO_INCREMENT,
+    platform VARCHAR(20) NOT NULL DEFAULT 'tk3c',  -- tk3c / pchome
     product_code VARCHAR(50) NOT NULL,
     category VARCHAR(50) NOT NULL,
     brand VARCHAR(100),
@@ -11,8 +12,9 @@ CREATE TABLE IF NOT EXISTS products (
     specs TEXT,
     first_seen_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    UNIQUE KEY uk_product_code (product_code),
-    INDEX idx_category (category)
+    UNIQUE KEY uk_platform_product_code (platform, product_code),
+    INDEX idx_category (category),
+    INDEX idx_platform_category (platform, category)
 ) ENGINE=InnoDB;
 
 CREATE TABLE IF NOT EXISTS price_history (
@@ -31,6 +33,7 @@ CREATE TABLE IF NOT EXISTS price_history (
 
 CREATE TABLE IF NOT EXISTS crawl_log (
     id INT PRIMARY KEY AUTO_INCREMENT,
+    platform VARCHAR(20) NOT NULL DEFAULT 'tk3c',
     category VARCHAR(50) NOT NULL,
     run_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     item_count INT NOT NULL DEFAULT 0,
