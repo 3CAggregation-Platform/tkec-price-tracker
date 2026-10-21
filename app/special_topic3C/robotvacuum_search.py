@@ -10,7 +10,7 @@ import datetime
 from bs4 import BeautifulSoup
 
 MAX_ITEMS = 20
-OUTPUT_FILE = "tk3c_robotvacuum_top20.csv"
+OUTPUT_FILE = "data/tk3c_robotvacuum_top20.csv"
 CATEGORY = "掃地機器人"
 SEARCH_KEYWORD = "掃地機器人"
 

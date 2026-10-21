@@ -15,7 +15,7 @@ import urllib.request as req
 import urllib.parse
 import urllib.error
 
-from special_topic3C import fridge_search, tv_search, airfryer_search, robotvacuum_search
+from app.special_topic3C import fridge_search, tv_search, airfryer_search, robotvacuum_search
 
 PLATFORM = "pchome"
 MAX_ITEMS = 20

@@ -8,7 +8,7 @@
 # - 不能用 build，改用事先 push 到 Docker Hub 的 image
 # - 程式碼打包在 image 裡，不再掛載 .:/app，也不用 --reload
 # - container_name / restart / depends_on 在 swarm 會被忽略，改用 deploy 設定
-#   （MySQL 比 worker 晚起來時，由 tasks.py 的自動重試處理）
+#   （MySQL 比 worker 晚起來時，由 app/tasks.py 的自動重試處理）
 version: '3.8'  # 3.8 才支援 external volume 指定 name
 
 services:
@@ -97,7 +97,7 @@ services:
 
   api:
     image: pennyliu32/tk3c-price-tracker:${DOCKER_IMAGE_VERSION}
-    command: uvicorn main:app --host 0.0.0.0 --port 8000
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
     env_file:
       - .env  # 部署時讀取本機的 .env，密碼不會進到 image
     environment:
@@ -119,7 +119,7 @@ services:
   celery-worker:
     image: pennyliu32/tk3c-price-tracker:${DOCKER_IMAGE_VERSION}
     hostname: "worker.{{.Task.Slot}}"  # 固定 worker 名稱，Flower 不會再出現舊的 Offline worker
-    command: celery -A celery_app worker --loglevel=info -E --hostname=%h
+    command: celery -A app.celery_app worker --loglevel=info -E --hostname=%h
     env_file:
       - .env
     environment:
@@ -139,7 +139,7 @@ services:
 
   celery-beat:
     image: pennyliu32/tk3c-price-tracker:${DOCKER_IMAGE_VERSION}
-    command: celery -A celery_app beat --loglevel=info --schedule=/app/celerybeat-data/celerybeat-schedule
+    command: celery -A app.celery_app beat --loglevel=info --schedule=/app/celerybeat-data/celerybeat-schedule
     env_file:
       - .env
     environment:

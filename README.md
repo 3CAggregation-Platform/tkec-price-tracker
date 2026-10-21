@@ -22,38 +22,66 @@
 
 ```
 tk3c-price-tracker/
-├── special_topic3C/
-│   ├── fridge_search.py       # 冰箱分類爬蟲
-│   ├── tv_search.py           # 電視分類爬蟲
-│   ├── airfryer_search.py     # 氣炸鍋分類爬蟲
-│   ├── robotvacuum_search.py  # 掃地機器人分類爬蟲
-│   └── pchome_search.py       # PChome 四大分類爬蟲（共用燦坤的配件過濾規則）
-├── migrations/                # 既有資料庫的結構變更（新建資料庫只需 init.sql）
-├── docker-compose.yml         # 開發用（docker compose）
-├── docker-compose-swarm.yml   # 部署用（docker swarm）
-├── init.sql                   # 資料庫初始化 schema
-└── .gitignore
+├── app/                           # 所有 Python 程式
+│   ├── main.py                    # FastAPI 查詢 API
+│   ├── celery_app.py              # Celery 設定與每日排程
+│   ├── tasks.py                   # Celery 爬蟲任務（含自動重試）
+│   ├── db.py                      # 資料庫連線與寫入
+│   └── special_topic3C/           # 爬蟲
+│       ├── fridge_search.py       # 燦坤冰箱
+│       ├── tv_search.py           # 燦坤電視
+│       ├── airfryer_search.py     # 燦坤氣炸鍋
+│       ├── robotvacuum_search.py  # 燦坤掃地機器人
+│       └── pchome_search.py       # PChome 四大分類（共用燦坤的配件過濾規則）
+├── database/
+│   ├── init.sql                   # 資料庫初始化 schema（新建資料庫用）
+│   └── migrations/                # 既有資料庫的結構變更
+├── data/                          # 爬蟲單獨執行時輸出的 CSV
+├── Dockerfile
+├── docker-compose.yml             # 開發用（docker compose）
+├── docker-compose-swarm.yml       # 部署用（docker swarm）
+├── pyproject.toml / uv.lock / requirements.txt
+└── .env                           # 帳密設定（不進 git、不進 image）
 ```
 
 ## 如何啟動
 
-1. 複製專案後，在根目錄建立 `.env` 檔案，設定資料庫帳密：
+1. 複製專案後，在根目錄建立 `.env` 檔案：
 
    ```
    MYSQL_ROOT_PASSWORD=your_password
    MYSQL_DATABASE=tk3c_price_tracker
+   MYSQL_PASSWORD=your_password
+
+   RABBITMQ_USER=admin
+   RABBITMQ_PASS=your_password
+   RABBITMQ_HOST=localhost
+   RABBITMQ_PORT=5672
+
+   # 在本機（容器外）執行程式時連資料庫用；容器內會被 docker-compose 覆蓋成 mysql:3306
+   DB_HOST=127.0.0.1
+   DB_PORT=13306
    ```
 
-2. 啟動 MySQL 容器：
+2. 第一次建立資料庫時，先把 `docker-compose.yml` 裡 `./database/init.sql` 那行掛載打開，建好資料表後再註解回去（單檔掛載在 Docker Desktop 重開後常失效）。
+
+3. 啟動全部服務：
 
    ```bash
-   docker-compose up -d
+   docker compose up -d
    ```
 
-3. 執行對應分類的爬蟲程式，例如：
+4. 也可以在本機單獨執行某個爬蟲測試，不會寫入資料庫（燦坤爬蟲把結果存成 `data/` 裡的 CSV，PChome 爬蟲只印在畫面上）：
 
    ```bash
-   python special_topic3C/fridge_search.py
+   python app/special_topic3C/fridge_search.py
+   python -m app.special_topic3C.pchome_search 冰箱
+   ```
+
+5. 既有資料庫要套用 `database/migrations/` 裡的結構變更時：
+
+   ```bash
+   docker exec -i tk3c_mysql sh -c 'mysql -uroot -p"$MYSQL_ROOT_PASSWORD"' < database/migrations/001_add_platform.sql
    ```
 
 ## 常用指令
@@ -67,7 +95,7 @@ docker compose up -d
 # 查看各容器狀態
 docker compose ps
 
-# 重啟 Celery（修改爬蟲或 tasks.py 後需要重啟才會生效）
+# 重啟 Celery（修改爬蟲或 app/tasks.py 後需要重啟才會生效）
 docker compose restart celery-worker celery-beat
 
 # 檢查 docker-compose.yml 格式是否正確
@@ -92,13 +120,13 @@ docker logs --tail 20 tk3c_mysql
 
 ### 手動觸發爬蟲（補跑當天資料）
 
-排程時間：燦坤 20:00 起、PChome 20:40 起，每 10 分鐘一個分類（見 `celery_app.py`）。
+排程時間：燦坤 20:00 起、PChome 20:40 起，每 10 分鐘一個分類（見 `app/celery_app.py`）。
 
 排程時間錯過、或任務失敗時，可以手動送出任務（只補跑部分分類時，刪掉不需要的任務名稱即可）：
 
 ```bash
 docker exec tk3c_celery_worker python -c "
-from celery_app import app
+from app.celery_app import app
 for t in ['crawl_fridge', 'crawl_tv', 'crawl_airfryer', 'crawl_robotvacuum',
           'crawl_pchome_fridge', 'crawl_pchome_tv', 'crawl_pchome_airfryer', 'crawl_pchome_robotvacuum']:
     print(t, app.send_task(t).id)"
@@ -144,7 +172,7 @@ DELETE FROM products WHERE id = <商品 id>;
 - swarm 不支援 `build`，要先 build image 並 push 到 Docker Hub
 - 程式碼打包在 image 裡，沒有 `--reload`，改程式碼後要重新 build 並升版
 - `.env` 不會打包進 image（見 `.dockerignore`），部署時才透過 `env_file` 帶入
-- swarm 會忽略 `depends_on`，MySQL 晚啟動時由 `tasks.py` 的自動重試處理
+- swarm 會忽略 `depends_on`，MySQL 晚啟動時由 `app/tasks.py` 的自動重試處理
 
 ### 第一次部署
 
@@ -193,7 +221,7 @@ docker service logs --since 1h tk3c_celery-worker 2>&1 | grep -E "succeeded|rais
 
 # 手動觸發爬蟲（補跑當天資料）
 docker exec $(docker ps -q -f name=tk3c_celery-worker) python -c "
-from celery_app import app
+from app.celery_app import app
 for t in ['crawl_fridge', 'crawl_tv', 'crawl_airfryer', 'crawl_robotvacuum',
           'crawl_pchome_fridge', 'crawl_pchome_tv', 'crawl_pchome_airfryer', 'crawl_pchome_robotvacuum']:
     print(t, app.send_task(t).id)"

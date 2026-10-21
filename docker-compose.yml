@@ -16,7 +16,7 @@ services:
       - mysql_data:/var/lib/mysql
       # init.sql 只在資料庫第一次建立時需要；單檔掛載在 Docker Desktop 重開後常失效，導致 MySQL 起不來
       # 若要從空的 volume 重建資料庫，再暫時把下一行打開
-      # - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+      # - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
     healthcheck:
       test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$$MYSQL_ROOT_PASSWORD --silent"]
       interval: 5s
@@ -70,7 +70,7 @@ services:
     build: .
     container_name: tk3c_api
     restart: unless-stopped
-    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
     env_file:
       - .env
     environment:
@@ -89,7 +89,7 @@ services:
     build: .
     container_name: tk3c_celery_worker
     restart: unless-stopped
-    command: celery -A celery_app worker --loglevel=info -E
+    command: celery -A app.celery_app worker --loglevel=info -E
     env_file:
       - .env
     environment:
@@ -109,7 +109,7 @@ services:
     build: .
     container_name: tk3c_celery_beat
     restart: unless-stopped
-    command: celery -A celery_app beat --loglevel=info --schedule=/app/celerybeat-data/celerybeat-schedule
+    command: celery -A app.celery_app beat --loglevel=info --schedule=/app/celerybeat-data/celerybeat-schedule
     env_file:
       - .env
     environment:

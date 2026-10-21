@@ -3,7 +3,7 @@ from typing import Optional
 from fastapi import FastAPI, HTTPException
 from fastapi.openapi.docs import get_redoc_html
 
-from db import get_connection
+from app.db import get_connection
 
 # FastAPI 內建的 /redoc 預設載入 redoc@next，但這個版本在 CDN 上已下架（404），
 # 會導致頁面空白，所以關掉內建路由，改用固定版本號自己接

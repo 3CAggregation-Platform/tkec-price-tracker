@@ -14,3 +14,7 @@ venv/
 .vscode/
 .idea/
 venv/
+
+# Celery beat 執行時產生的排程檔（實際使用的在 Docker volume 裡）
+celerybeat-schedule
+celerybeat-data/

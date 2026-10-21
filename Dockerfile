@@ -11,4 +11,4 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 # 預設指令，實際跑什麼由 docker-compose.yml 的 command 覆蓋
-CMD ["celery", "-A", "celery_app", "worker", "--loglevel=info"]
+CMD ["celery", "-A", "app.celery_app", "worker", "--loglevel=info"]

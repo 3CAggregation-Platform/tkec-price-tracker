@@ -15,7 +15,7 @@ app = Celery(
     "tk3c",
     broker=BROKER_URL,
     backend="rpc://",
-    include=["tasks"],
+    include=["app.tasks"],
 )
 
 app.conf.timezone = "Asia/Taipei"

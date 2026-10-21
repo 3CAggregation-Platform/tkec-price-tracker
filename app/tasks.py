@@ -1,12 +1,12 @@
 import pymysql
 
-from celery_app import app
-from db import save_products_to_db, log_crawl_run
-from special_topic3C.fridge_search import run_fridge_crawler
-from special_topic3C.tv_search import run_tv_crawler
-from special_topic3C.airfryer_search import run_airfryer_crawler
-from special_topic3C.robotvacuum_search import run_robotvacuum_crawler
-from special_topic3C.pchome_search import run_pchome_crawler
+from app.celery_app import app
+from app.db import save_products_to_db, log_crawl_run
+from app.special_topic3C.fridge_search import run_fridge_crawler
+from app.special_topic3C.tv_search import run_tv_crawler
+from app.special_topic3C.airfryer_search import run_airfryer_crawler
+from app.special_topic3C.robotvacuum_search import run_robotvacuum_crawler
+from app.special_topic3C.pchome_search import run_pchome_crawler
 
 MAX_RETRIES = 3
 RETRY_DELAY = 300  # 失敗後隔 5 分鐘重試
