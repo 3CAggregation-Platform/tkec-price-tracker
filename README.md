@@ -8,16 +8,23 @@
   - 燦坤：搜尋頁的排行榜區塊，不足 20 筆再從搜尋結果補齊
   - PChome：搜尋 API 依銷量排序，以館別代碼與分類代碼排除配件後取前 20 筆
 - 使用 MySQL 儲存商品主檔與每日價格歷史，方便追蹤價格變化趨勢
-- 使用 Docker 容器化資料庫，方便部署與環境一致性
+- 使用 Celery 每天自動排程爬取，爬蟲失敗會自動重試
+- 使用 Redash 視覺化兩個平台的價格走勢、價格比較、排行榜、降價商品與評價
+- 使用 Docker Compose（開發）與 Docker Swarm（部署）容器化所有服務
 
 ## 技術架構
 
-- **爬蟲**：Python
-- **資料庫**：MySQL（透過 Docker 啟動）
+- **爬蟲**：Python（燦坤解析 HTML、PChome 呼叫搜尋 API）
+- **排程**：Celery + RabbitMQ，Flower 監控任務
+- **API**：FastAPI
+- **資料庫**：MySQL 8
+- **視覺化**：Redash
+- **部署**：Docker Compose / Docker Swarm
 - **資料表設計**：
   - `products`：商品主檔（平台、商品編號、名稱、分類等；平台 + 商品編號為唯一鍵）
   - `price_history`：每日價格歷史（依商品編號關聯，記錄每次爬取的價格、排名與評價；同一天重跑只保留最後一次）
     - `rating` / `review_count`：平均星數與評價則數，僅 PChome 有；燦坤及無人評價的商品為 NULL
+  - `crawl_log`：每次爬蟲執行的結果（平台、分類、筆數、成功或沒抓到資料）
 
 ## 專案結構
 
@@ -38,6 +45,9 @@ tk3c-price-tracker/
 │   ├── init.sql                   # 資料庫初始化 schema（新建資料庫用）
 │   └── migrations/                # 既有資料庫的結構變更
 ├── data/                          # 爬蟲單獨執行時輸出的 CSV
+├── redash/
+│   ├── queries/                   # 儀表板 6 個查詢的 SQL
+│   └── setup_redash.py            # 透過 Redash API 建立資料來源、查詢、圖表與儀表板
 ├── Dockerfile
 ├── docker-compose.yml             # 開發用（docker compose）
 ├── docker-compose-swarm.yml       # 部署用（docker swarm）
@@ -164,6 +174,7 @@ DELETE FROM products WHERE id = <商品 id>;
 | phpMyAdmin | http://localhost:8080 |
 | Flower（Celery 任務監控） | http://localhost:5555 |
 | RabbitMQ 管理介面 | http://localhost:15672 |
+| Redash 儀表板 | http://localhost:5005/dashboards/1-tk3c- |
 
 ## Docker Swarm 部署
 
@@ -236,16 +247,60 @@ docker stack rm tk3c
 docker compose up -d
 ```
 
+## Redash 視覺化
+
+使用課程部署的 Redash（swarm stack `redash`，http://localhost:5005），連到本專案的 MySQL。
+
+### 儀表板內容
+
+| 圖表 | 類型 | 查詢 |
+|---|---|---|
+| 每日平均價格走勢（用「分類」篩選） | 折線圖 | `q1_trend.sql` |
+| 燦坤 vs PChome 各分類價格比較 | 長條圖 | `q2_compare.sql` |
+| 今日 Top 20 排行榜（可篩選分類、平台） | 表格 | `q3_ranking.sql` |
+| 最近 14 天降價商品 | 表格 | `q4_price_drop.sql` |
+| PChome 銷量排名 vs 評價 | 散佈圖 | `q5_rating.sql` |
+| 爬蟲每日執行狀態（正常每天 8 筆） | 堆疊長條圖 | `q6_crawl_status.sql` |
+
+- 欄位名稱加上 `::filter`（例如 `分類::filter`）會變成篩選器，儀表板開啟了篩選器合併，最上方的「分類」會同時套用到所有圖表
+- 查詢每天 21:30 自動重新整理（PChome 最後一個分類 21:10 跑完之後）；Redash 的排程時間以 UTC 儲存，所以腳本裡寫 `13:30`
+
+### 連線方式
+
+- Redash 和專題在不同的 swarm stack，透過本機 port 連線：`host.docker.internal:13306`
+- 使用唯讀帳號 `redash_reader`（只有 SELECT 權限），密碼存在 `.env` 的 `REDASH_DB_PASSWORD`
+- Redash 10 的 MySQL 驅動不支援 MySQL 8 預設的 `caching_sha2_password`，所以這個帳號使用 `mysql_native_password`
+
+### 重新建立儀表板
+
+Redash 重建或想還原成預設版面時，第一次需要先在 http://localhost:5005/setup 建立管理員帳號，再執行：
+
+```bash
+# 1. 建立唯讀帳號（只需一次；已存在會略過建立）
+set -a; source .env; set +a
+docker exec -e RP="$REDASH_DB_PASSWORD" tk3c_mysql sh -c 'mysql -uroot -p"$MYSQL_ROOT_PASSWORD" -e "
+CREATE USER IF NOT EXISTS '\''redash_reader'\''@'\''%'\'' IDENTIFIED WITH mysql_native_password BY '\''$RP'\'';
+GRANT SELECT ON tk3c_price_tracker.* TO '\''redash_reader'\''@'\''%'\'';"'
+
+# 2. 建立資料來源、查詢、圖表與儀表板（API Key 在 Redash 個人頁面）
+REDASH_API_KEY=<你的 API Key> python3 redash/setup_redash.py
+```
+
+swarm 版的 MySQL container 名稱帶亂數，第 1 步的 `tk3c_mysql` 改成 `$(docker ps -q -f name=tk3c_mysql)`。
+
+重複執行腳本不會產生重複的查詢或儀表板，同名的會直接更新（在 Redash 網頁上手動改過的查詢內容會被覆蓋）。
+
 ## 目前進度
 
-- [x] 完成冰箱、電視、氣炸鍋、掃地機器人四大分類的爬蟲程式
-- [x] MySQL 資料庫架構設計（products + price_history）
-- [x] 排程自動化（規劃使用 Celery + RabbitMQ + Flower）
+- [x] 完成燦坤四大分類（冰箱、電視、氣炸鍋、掃地機器人）的爬蟲程式
+- [x] 新增 PChome 四大分類爬蟲與評價
+- [x] MySQL 資料庫架構設計（products + price_history + crawl_log）
+- [x] 排程自動化（Celery + RabbitMQ + Flower），失敗自動重試
 - [x] 使用 Docker Swarm 部署
-- [ ] 價格走勢查詢介面
+- [x] 使用 Redash 視覺化價格走勢與比價
 
 ## 未來規劃
 
-- 使用 Celery + Redis 建立每日自動排程機制
-- 使用 Flower 監控排程執行狀況
-- 開發簡易查詢介面，呈現商品歷史價格走勢圖
+- 品牌名稱標準化（例如「奇美CHIMEI」與「CHIMEI」統一），方便跨平台統計
+- 型號標準化（統一大小寫、去除顏色代碼），讓同型號商品能跨平台比價
+- 與同學蒐集的其他平台資料合併（需先約定平台名稱、分類、品牌與價格格式）
