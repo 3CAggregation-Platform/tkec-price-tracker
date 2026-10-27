@@ -1,5 +1,5 @@
 """
-PChome 24h 爬蟲（冰箱、電視、氣炸鍋、掃地機器人）
+PChome 24h 爬蟲（冰箱、電視、氣炸鍋、掃地機器人、洗衣機）
 
 PChome 的搜尋頁是用 JavaScript 載入商品，直接抓 HTML 拿不到資料，
 所以改打網頁背後的搜尋 API，回傳的就是 JSON。
@@ -15,7 +15,7 @@ import urllib.request as req
 import urllib.parse
 import urllib.error
 
-from app.special_topic3C import fridge_search, tv_search, airfryer_search, robotvacuum_search
+from app.special_topic3C import fridge_search, tv_search, airfryer_search, robotvacuum_search, washer_search
 
 PLATFORM = "pchome"
 MAX_ITEMS = 20
@@ -64,6 +64,13 @@ CATEGORIES = {
         "pcate_prefix": "109008001",  # 主機；109008002 是耗材配件
         "filter_module": robotvacuum_search,
         "extra_exclude": [],
+    },
+    "洗衣機": {
+        "keyword": "洗衣機",
+        "cate_id": "DPAI",
+        "pcate_prefix": "109007004",  # 109007004001 直立式、002 滾筒；109007005 是濾網等耗材（銷量前幾頁幾乎都是）
+        "filter_module": washer_search,
+        "extra_exclude": ["迷你", "內衣", "內褲", "寵物"],  # 109007004003 的迷你洗衣機
     },
 }
 

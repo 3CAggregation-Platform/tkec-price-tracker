@@ -3,6 +3,8 @@ import re
 import pymysql
 from dotenv import load_dotenv
 
+from app.goods_daily import sync_goods_daily
+
 load_dotenv()
 
 DB_CONFIG = {
@@ -124,6 +126,12 @@ def save_products_to_db(rows):
                     ),
                 )
                 success += 1
+
+            # 3. 同步一份組員 momo 格式的資料到 goods_daily，方便之後合併
+            for platform, category, crawl_date in {
+                (row.get("平台", "tk3c"), row.get("分類"), row.get("抓取日期")) for row in rows
+            }:
+                sync_goods_daily(cursor, platform, category, crawl_date)
 
         conn.commit()
     except Exception as e:

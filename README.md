@@ -1,12 +1,19 @@
 # TK3C 比價引擎（3C 搜索引擎）
 
-爬取燦坤（tk3c.com）與 PChome 24h 的冰箱、電視、氣炸鍋、掃地機器人分類排名與價格，記錄每日價格歷史，可用於比較不同平台的價格與後續查詢價格走勢。
+爬取燦坤（tk3c.com）與 PChome 24h 的冰箱、電視、氣炸鍋、掃地機器人、洗衣機，以及 momo、Yahoo 購物中心的氣炸鍋分類排名與價格，記錄每日價格歷史，可用於比較不同平台的價格與後續查詢價格走勢。
 
 ## 功能
 
-- 針對兩個平台（燦坤、PChome）的四大分類（冰箱、電視、氣炸鍋、掃地機器人）自動爬取商品排名與即時價格
-  - 燦坤：搜尋頁的排行榜區塊，不足 20 筆再從搜尋結果補齊
-  - PChome：搜尋 API 依銷量排序，以館別代碼與分類代碼排除配件後取前 20 筆
+- 自動爬取各平台、各分類前 20 名的商品排名與即時價格：
+
+  | 平台 | 分類 | 排名來源 |
+  |---|---|---|
+  | 燦坤 | 冰箱、電視、氣炸鍋、掃地機器人、洗衣機 | 搜尋頁的排行榜區塊，不足 20 筆再從搜尋結果補齊 |
+  | PChome | 冰箱、電視、氣炸鍋、掃地機器人、洗衣機 | 搜尋 API 依銷量排序，以館別代碼與分類代碼排除配件 |
+  | momo | 氣炸鍋 | 搜尋頁依銷量排序（只取 momo「氣炸鍋」分類），排除廣告商品 |
+  | Yahoo 購物中心 | 氣炸鍋 | 搜尋頁依銷量排序，只保留 Yahoo 分類為「氣炸鍋/油炸鍋」的商品 |
+
+  各平台共用燦坤爬蟲的配件過濾規則（排除關鍵字、名稱需有容量），標準一致
 - 使用 MySQL 儲存商品主檔與每日價格歷史，方便追蹤價格變化趨勢
 - 使用 Airflow 每天自動排程爬取（DockerOperator 啟動爬蟲 container），失敗會自動重試，可在網頁上查看每次執行的狀態與 log
 - 使用 Redash 視覺化兩個平台的價格走勢、價格比較、排行榜、降價商品與評價
@@ -14,7 +21,7 @@
 
 ## 技術架構
 
-- **爬蟲**：Python（燦坤解析 HTML、PChome 呼叫搜尋 API）
+- **爬蟲**：Python（燦坤解析 HTML、PChome 呼叫搜尋 API、momo / Yahoo 解析搜尋頁內嵌的 JSON）
 - **排程**：Airflow（swarm 部署）；Celery + RabbitMQ 保留給手動補爬，Flower 監控任務
 - **API**：FastAPI
 - **資料庫**：MySQL 8
@@ -23,8 +30,9 @@
 - **資料表設計**：
   - `products`：商品主檔（平台、商品編號、名稱、分類等；平台 + 商品編號為唯一鍵）
   - `price_history`：每日價格歷史（依商品編號關聯，記錄每次爬取的價格、排名與評價；同一天重跑只保留最後一次）
-    - `rating` / `review_count`：平均星數與評價則數，僅 PChome 有；燦坤及無人評價的商品為 NULL
+    - `rating` / `review_count`：平均星數與評價則數，PChome、momo、Yahoo 有；燦坤及無人評價的商品為 NULL
   - `crawl_log`：每次爬蟲執行的結果（平台、分類、筆數、成功或沒抓到資料）
+  - `goods_daily`：和組員 momo 資料同格式的每日商品表（中文欄位），每次爬蟲寫入後自動同步，用來合併三個平台，見[與組員資料合併](#與組員資料合併)
 
 ## 專案結構
 
@@ -37,12 +45,16 @@ tk3c-price-tracker/
 │   ├── producer.py                # 把 8 個爬蟲任務送進 RabbitMQ，給 Airflow DockerOperator 呼叫
 │   ├── run_crawl.py               # 不經過 RabbitMQ，直接執行單一平台 + 分類的爬蟲（手動測試用）
 │   ├── db.py                      # 資料庫連線與寫入
+│   ├── goods_daily.py             # 轉成組員 momo 格式（品牌、型號統一寫法）並同步到 goods_daily
 │   └── special_topic3C/           # 爬蟲
 │       ├── fridge_search.py       # 燦坤冰箱
 │       ├── tv_search.py           # 燦坤電視
 │       ├── airfryer_search.py     # 燦坤氣炸鍋
 │       ├── robotvacuum_search.py  # 燦坤掃地機器人
-│       └── pchome_search.py       # PChome 四大分類（共用燦坤的配件過濾規則）
+│       ├── washer_search.py       # 燦坤洗衣機
+│       ├── pchome_search.py       # PChome 五個分類（共用燦坤的配件過濾規則）
+│       ├── momo_search.py         # momo 氣炸鍋
+│       └── yahoo_search.py        # Yahoo 購物中心氣炸鍋
 ├── database/
 │   ├── init.sql                   # 資料庫初始化 schema（新建資料庫用）
 │   └── migrations/                # 既有資料庫的結構變更
@@ -88,11 +100,13 @@ tk3c-price-tracker/
    docker compose up -d
    ```
 
-4. 也可以在本機單獨執行某個爬蟲測試，不會寫入資料庫（燦坤爬蟲把結果存成 `data/` 裡的 CSV，PChome 爬蟲只印在畫面上）：
+4. 也可以在本機單獨執行某個爬蟲測試，不會寫入資料庫（燦坤爬蟲把結果存成 `data/` 裡的 CSV，PChome、momo、Yahoo 爬蟲只印在畫面上）：
 
    ```bash
    python app/special_topic3C/fridge_search.py
    python -m app.special_topic3C.pchome_search 冰箱
+   python -m app.special_topic3C.momo_search 氣炸鍋
+   python -m app.special_topic3C.yahoo_search 氣炸鍋
    ```
 
 5. 既有資料庫要套用 `database/migrations/` 裡的結構變更時：
@@ -266,7 +280,7 @@ Airflow（每天 20:00）→ DockerOperator 執行 python -m app.producer → Ra
 
 - 參考課程 `dataflow` 的 `ProducerScheduler`：image 以 `linsamtw/tibame_dataflow:0.0.7`（Airflow 2.7.3）為底，只加入本專題的 DAG；用 DockerOperator 啟動 `pennyliu32/tk3c-price-tracker` 執行 producer，跑完自動刪除 container
 - producer container 和 `tk3c_rabbitmq` 都在 `tk3c_attachable_network`，所以送得進任務（RabbitMQ 同時也在 `tk3c_swarm_network` 給 celery-worker 用）
-- 燦坤、PChome 各送一條 Celery chain：兩個網站同時跑，同一個網站的 4 個分類依序跑（約 5 分鐘全部完成），進度看 Flower（http://localhost:5555）
+- 每個網站各送一條 Celery chain（共 12 個任務）：不同網站同時跑，同一個網站的分類依序跑（燦坤 5 類約 6 分鐘，其他網站 1 分鐘內），進度看 Flower（http://localhost:5555）
 - Airflow 只負責送任務，送成功就是綠色；爬蟲失敗的重試在 `app/tasks.py`（隔 5 分鐘，最多 3 次）
 - metadata 存在本專題 MySQL 的 `airflow` 資料庫（專用帳號 `airflow`，只能存取這個資料庫）
 - 帳密、金鑰都由 `.env` 的 `AIRFLOW_*` 在部署時帶入，不會打包進 image
@@ -356,18 +370,56 @@ swarm 版的 MySQL container 名稱帶亂數，第 1 步的 `tk3c_mysql` 改成 
 
 重複執行腳本不會產生重複的查詢或儀表板，同名的會直接更新（在 Redash 網頁上手動改過的查詢內容會被覆蓋）。
 
+## 與組員資料合併
+
+組員的 momo 爬蟲（[bihruwang/ecommerce_crawler](https://github.com/bihruwang/ecommerce_crawler)）存成 `momo_goods_daily` 表，本專案以組員的格式為主，另外產生一張同格式的 `goods_daily`：
+
+| 欄位 | 說明 |
+|---|---|
+| 平台 | `tk3c` / `pchome`（組員的資料為 `momo`） |
+| 抓取日期、分類、商品編號、商品名稱 | 和組員相同 |
+| 廠牌 | 統一為組員的「英文 中文」寫法，例如燦坤的「聲寶SAMPO」、PChome 的「SAMPO」都改成「SAMPO 聲寶」（對照表在 `app/goods_daily.py` 的 `BRANDS`） |
+| 型號 | 去掉括號內的顏色 / 版本（`SR-C48GDV(P2)` → `SR-C48GDV`）；沒有型號時用組員的規則，從商品名稱最後一組括號抓 |
+| 售價、原價、評分、評價數 | 和組員相同（整數價格；燦坤沒有評價為 NULL） |
+| 銷量、庫存、促銷文案、有政府補助、銷量下限 | 只有 momo 有，本專案為 NULL |
+| 排名、連結 | 本專案多出的欄位，momo 的排名可用資料順序（依銷量排序）補上 |
+
+```bash
+# 第一次建立：建表後把既有歷史資料轉進來（之後每次爬蟲會自動同步，不用再跑）
+docker exec -i $(docker ps -q -f name=tk3c_mysql) sh -c 'mysql --default-character-set=utf8mb4 -uroot -p"$MYSQL_ROOT_PASSWORD"' < database/migrations/003_add_goods_daily.sql
+uv run python -m app.goods_daily
+```
+
+把組員的資料匯進同一張表（組員的 `momo_goods_daily` 先匯入本專案資料庫）：
+
+```sql
+INSERT INTO goods_daily (平台, 抓取日期, 分類, 商品編號, 廠牌, 型號, 商品名稱, 售價, 原價,
+                         銷量, 評分, 評價數, 庫存, 促銷文案, 有政府補助, 銷量下限)
+SELECT 'momo', 抓取日期, 分類, 商品編號, 廠牌, 型號, 商品名稱, 售價, 原價,
+       銷量, 評分, 評價數, 庫存, 促銷文案, 有政府補助, 銷量下限
+FROM momo_goods_daily;
+
+-- 同型號跨平台比價
+SELECT 型號, 平台, 售價 FROM goods_daily
+WHERE 抓取日期 = CURDATE() AND 型號 IN (
+    SELECT 型號 FROM goods_daily WHERE 抓取日期 = CURDATE() GROUP BY 型號 HAVING COUNT(DISTINCT 平台) > 1
+)
+ORDER BY 型號, 售價;
+```
+
 ## 目前進度
 
 - [x] 完成燦坤四大分類（冰箱、電視、氣炸鍋、掃地機器人）的爬蟲程式
 - [x] 新增 PChome 四大分類爬蟲與評價
+- [x] 燦坤、PChome 新增洗衣機；新增 momo、Yahoo 購物中心氣炸鍋爬蟲
 - [x] MySQL 資料庫架構設計（products + price_history + crawl_log）
 - [x] 排程自動化（Celery + RabbitMQ + Flower），失敗自動重試
 - [x] 使用 Docker Swarm 部署
 - [x] 使用 Airflow 取代 Celery beat 排程每日爬蟲
 - [x] 使用 Redash 視覺化價格走勢與比價
+- [x] 產生和組員 momo 資料同格式的 `goods_daily`（品牌、型號統一寫法）
 
 ## 未來規劃
 
-- 品牌名稱標準化（例如「奇美CHIMEI」與「CHIMEI」統一），方便跨平台統計
-- 型號標準化（統一大小寫、去除顏色代碼），讓同型號商品能跨平台比價
-- 與同學蒐集的其他平台資料合併（需先約定平台名稱、分類、品牌與價格格式）
+- 組員的 momo 資料匯入 `goods_daily`，Redash 加上三平台比價
+- PChome 商品名稱沒有括號的型號抓取規則（目前約一半抓不到型號）

@@ -3,6 +3,7 @@
 
     python -m app.run_crawl tk3c 冰箱
     python -m app.run_crawl pchome 掃地機器人
+    python -m app.run_crawl momo 氣炸鍋
 
 沒抓到資料或寫入失敗時以非 0 結束（每日排程走 app/producer.py → RabbitMQ → app/tasks.py）
 """
@@ -13,16 +14,20 @@ from app.special_topic3C.fridge_search import run_fridge_crawler
 from app.special_topic3C.tv_search import run_tv_crawler
 from app.special_topic3C.airfryer_search import run_airfryer_crawler
 from app.special_topic3C.robotvacuum_search import run_robotvacuum_crawler
+from app.special_topic3C.washer_search import run_washer_crawler
 from app.special_topic3C.pchome_search import run_pchome_crawler, CATEGORIES as PCHOME_CATEGORIES
+from app.special_topic3C.momo_search import run_momo_crawler, CATEGORIES as MOMO_CATEGORIES
+from app.special_topic3C.yahoo_search import run_yahoo_crawler, CATEGORIES as YAHOO_CATEGORIES
 
 TK3C_CRAWLERS = {
     "冰箱": run_fridge_crawler,
     "電視": run_tv_crawler,
     "氣炸鍋": run_airfryer_crawler,
     "掃地機器人": run_robotvacuum_crawler,
+    "洗衣機": run_washer_crawler,
 }
 
-PLATFORM_NAMES = {"tk3c": "燦坤", "pchome": "PChome"}
+PLATFORM_NAMES = {"tk3c": "燦坤", "pchome": "PChome", "momo": "momo", "yahoo": "Yahoo"}
 
 
 def get_crawler(platform, category):
@@ -30,6 +35,10 @@ def get_crawler(platform, category):
         return TK3C_CRAWLERS[category]
     if platform == "pchome" and category in PCHOME_CATEGORIES:
         return lambda: run_pchome_crawler(category)
+    if platform == "momo" and category in MOMO_CATEGORIES:
+        return lambda: run_momo_crawler(category)
+    if platform == "yahoo" and category in YAHOO_CATEGORIES:
+        return lambda: run_yahoo_crawler(category)
     raise SystemExit(f"不支援的平台或分類：{platform} {category}")
 
 
@@ -52,5 +61,5 @@ def main(platform, category):
 
 if __name__ == "__main__":
     if len(sys.argv) != 3:
-        raise SystemExit("用法：python -m app.run_crawl <tk3c|pchome> <冰箱|電視|氣炸鍋|掃地機器人>")
+        raise SystemExit("用法：python -m app.run_crawl <tk3c|pchome|momo|yahoo> <冰箱|電視|氣炸鍋|掃地機器人|洗衣機>")
     sys.exit(main(sys.argv[1], sys.argv[2]))

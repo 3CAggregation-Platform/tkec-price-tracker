@@ -6,7 +6,7 @@ WITH latest AS (
 )
 SELECT
     p.category AS `分類::filter`,
-    CASE p.platform WHEN 'tk3c' THEN '燦坤' ELSE 'PChome' END AS `平台::filter`,
+    CASE p.platform WHEN 'tk3c' THEN '燦坤' WHEN 'pchome' THEN 'PChome' WHEN 'yahoo' THEN 'Yahoo' ELSE p.platform END AS `平台::filter`,
     h.`rank` AS 排名,
     p.brand AS 品牌,
     p.name AS 商品名稱,

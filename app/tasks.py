@@ -6,13 +6,16 @@ from app.special_topic3C.fridge_search import run_fridge_crawler
 from app.special_topic3C.tv_search import run_tv_crawler
 from app.special_topic3C.airfryer_search import run_airfryer_crawler
 from app.special_topic3C.robotvacuum_search import run_robotvacuum_crawler
+from app.special_topic3C.washer_search import run_washer_crawler
 from app.special_topic3C.pchome_search import run_pchome_crawler
+from app.special_topic3C.momo_search import run_momo_crawler
+from app.special_topic3C.yahoo_search import run_yahoo_crawler
 
 MAX_RETRIES = 3
 RETRY_DELAY = 300  # 失敗後隔 5 分鐘重試
 
 
-PLATFORM_NAMES = {"tk3c": "燦坤", "pchome": "PChome"}
+PLATFORM_NAMES = {"tk3c": "燦坤", "pchome": "PChome", "momo": "momo", "yahoo": "Yahoo"}
 
 
 def run_crawl_task(task, category, crawler, platform="tk3c"):
@@ -62,6 +65,11 @@ def crawl_robotvacuum(self):
     return run_crawl_task(self, "掃地機器人", run_robotvacuum_crawler)
 
 
+@app.task(name="crawl_washer", bind=True, max_retries=MAX_RETRIES)
+def crawl_washer(self):
+    return run_crawl_task(self, "洗衣機", run_washer_crawler)
+
+
 @app.task(name="crawl_pchome_fridge", bind=True, max_retries=MAX_RETRIES)
 def crawl_pchome_fridge(self):
     return run_crawl_task(self, "冰箱", lambda: run_pchome_crawler("冰箱"), "pchome")
@@ -80,3 +88,18 @@ def crawl_pchome_airfryer(self):
 @app.task(name="crawl_pchome_robotvacuum", bind=True, max_retries=MAX_RETRIES)
 def crawl_pchome_robotvacuum(self):
     return run_crawl_task(self, "掃地機器人", lambda: run_pchome_crawler("掃地機器人"), "pchome")
+
+
+@app.task(name="crawl_pchome_washer", bind=True, max_retries=MAX_RETRIES)
+def crawl_pchome_washer(self):
+    return run_crawl_task(self, "洗衣機", lambda: run_pchome_crawler("洗衣機"), "pchome")
+
+
+@app.task(name="crawl_momo_airfryer", bind=True, max_retries=MAX_RETRIES)
+def crawl_momo_airfryer(self):
+    return run_crawl_task(self, "氣炸鍋", lambda: run_momo_crawler("氣炸鍋"), "momo")
+
+
+@app.task(name="crawl_yahoo_airfryer", bind=True, max_retries=MAX_RETRIES)
+def crawl_yahoo_airfryer(self):
+    return run_crawl_task(self, "氣炸鍋", lambda: run_yahoo_crawler("氣炸鍋"), "yahoo")

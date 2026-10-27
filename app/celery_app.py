@@ -40,6 +40,10 @@ app.conf.beat_schedule = {
         "task": "crawl_robotvacuum",
         "schedule": crontab(hour=20, minute=30),
     },
+    "crawl-washer-daily": {
+        "task": "crawl_washer",
+        "schedule": crontab(hour=21, minute=20),
+    },
     # PChome 接在燦坤後面，同樣每 10 分鐘一類
     "crawl-pchome-fridge-daily": {
         "task": "crawl_pchome_fridge",
@@ -56,5 +60,17 @@ app.conf.beat_schedule = {
     "crawl-pchome-robotvacuum-daily": {
         "task": "crawl_pchome_robotvacuum",
         "schedule": crontab(hour=21, minute=10),
+    },
+    "crawl-pchome-washer-daily": {
+        "task": "crawl_pchome_washer",
+        "schedule": crontab(hour=21, minute=30),
+    },
+    "crawl-momo-airfryer-daily": {
+        "task": "crawl_momo_airfryer",
+        "schedule": crontab(hour=21, minute=40),
+    },
+    "crawl-yahoo-airfryer-daily": {
+        "task": "crawl_yahoo_airfryer",
+        "schedule": crontab(hour=21, minute=50),
     },
 }

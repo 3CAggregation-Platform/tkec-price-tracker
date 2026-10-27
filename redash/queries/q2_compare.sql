@@ -6,7 +6,7 @@ WITH latest AS (
 )
 SELECT
     p.category AS 分類,
-    CASE p.platform WHEN 'tk3c' THEN '燦坤' ELSE 'PChome' END AS 平台,
+    CASE p.platform WHEN 'tk3c' THEN '燦坤' WHEN 'pchome' THEN 'PChome' WHEN 'yahoo' THEN 'Yahoo' ELSE p.platform END AS 平台,
     ROUND(AVG(h.price)) AS 平均價格,
     MIN(h.price) AS 最低價格,
     MAX(h.price) AS 最高價格,
