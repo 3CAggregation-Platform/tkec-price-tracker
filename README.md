@@ -33,8 +33,9 @@ tk3c-price-tracker/
 ├── app/                           # 所有 Python 程式
 │   ├── main.py                    # FastAPI 查詢 API
 │   ├── celery_app.py              # Celery 設定（beat 排程在 swarm 已停用，改由 Airflow 負責）
-│   ├── tasks.py                   # Celery 爬蟲任務（含自動重試），用於手動補爬
-│   ├── run_crawl.py               # 執行單一平台 + 分類的爬蟲，給 Airflow DockerOperator 呼叫
+│   ├── tasks.py                   # Celery 爬蟲任務（含自動重試）
+│   ├── producer.py                # 把 8 個爬蟲任務送進 RabbitMQ，給 Airflow DockerOperator 呼叫
+│   ├── run_crawl.py               # 不經過 RabbitMQ，直接執行單一平台 + 分類的爬蟲（手動測試用）
 │   ├── db.py                      # 資料庫連線與寫入
 │   └── special_topic3C/           # 爬蟲
 │       ├── fridge_search.py       # 燦坤冰箱
@@ -47,7 +48,7 @@ tk3c-price-tracker/
 │   └── migrations/                # 既有資料庫的結構變更
 ├── data/                          # 爬蟲單獨執行時輸出的 CSV
 ├── airflow/
-│   ├── dags/tk3c_daily_crawl.py   # 每日爬蟲 DAG
+│   ├── dags/tk3c_producer.py      # 每日 Producer DAG
 │   ├── Dockerfile                 # 以課程的 tibame_dataflow image 為底，加入本專題的 DAG
 │   └── docker-compose-airflow.yml # Airflow swarm stack
 ├── redash/
@@ -257,11 +258,16 @@ docker compose up -d
 
 ## Airflow 排程
 
-每日爬蟲由 Airflow 的 `tk3c_daily_crawl` DAG 負責，swarm 版的 `celery-beat` 已設為 0 個副本，避免同一分類一天被爬兩次。
+每日爬蟲由 Airflow 的 `tk3c_producer` DAG 定期把任務送進 RabbitMQ，swarm 版的 `celery-beat` 已設為 0 個副本，避免同一分類一天被爬兩次。
 
-- 參考課程 `dataflow` 的做法：image 以 `linsamtw/tibame_dataflow:0.0.7`（Airflow 2.7.3）為底，只加入本專題的 DAG；用 DockerOperator 啟動 `pennyliu32/tk3c-price-tracker` 執行 `python -m app.run_crawl <平台> <分類>`，跑完自動刪除 container
-- 每天 20:00 開始，燦坤、PChome 兩條線同時跑；同一個網站的 4 個分類依序跑（約 5 分鐘全部完成）
-- 每個 task 失敗後隔 5 分鐘重試，最多 3 次
+```
+Airflow（每天 20:00）→ DockerOperator 執行 python -m app.producer → RabbitMQ → tk3c_celery-worker 爬蟲 → MySQL
+```
+
+- 參考課程 `dataflow` 的 `ProducerScheduler`：image 以 `linsamtw/tibame_dataflow:0.0.7`（Airflow 2.7.3）為底，只加入本專題的 DAG；用 DockerOperator 啟動 `pennyliu32/tk3c-price-tracker` 執行 producer，跑完自動刪除 container
+- producer container 和 `tk3c_rabbitmq` 都在 `tk3c_attachable_network`，所以送得進任務（RabbitMQ 同時也在 `tk3c_swarm_network` 給 celery-worker 用）
+- 燦坤、PChome 各送一條 Celery chain：兩個網站同時跑，同一個網站的 4 個分類依序跑（約 5 分鐘全部完成），進度看 Flower（http://localhost:5555）
+- Airflow 只負責送任務，送成功就是綠色；爬蟲失敗的重試在 `app/tasks.py`（隔 5 分鐘，最多 3 次）
 - metadata 存在本專題 MySQL 的 `airflow` 資料庫（專用帳號 `airflow`，只能存取這個資料庫）
 - 帳密、金鑰都由 `.env` 的 `AIRFLOW_*` 在部署時帶入，不會打包進 image
 
@@ -281,8 +287,8 @@ GRANT ALL PRIVILEGES ON airflow.* TO '\''airflow'\''@'\''%'\'';"'
 docker node update --label-add airflow=true $(docker node ls -q)
 
 # 4. build Airflow image 後部署（TK3C_IMAGE_VERSION 是爬蟲要用的專題 image 版本）
-docker build -t pennyliu32/tk3c-airflow:0.0.1 airflow
-AIRFLOW_IMAGE_VERSION=0.0.1 TK3C_IMAGE_VERSION=0.0.3 \
+docker build -t pennyliu32/tk3c-airflow:0.0.2 airflow
+AIRFLOW_IMAGE_VERSION=0.0.2 TK3C_IMAGE_VERSION=0.0.4 \
   docker stack deploy --with-registry-auth -c airflow/docker-compose-airflow.yml tk3c-airflow
 ```
 
@@ -295,16 +301,17 @@ DAG 部署後會自動啟用，而且會馬上補跑「最近一次」的排程�
 docker stack services tk3c-airflow
 
 # 手動觸發一次（網頁上按 DAG 右邊的 ▶ 也可以）
-docker exec $(docker ps -q -f name=tk3c-airflow_scheduler) /dataflow/.venv/bin/airflow dags trigger tk3c_daily_crawl
+docker exec $(docker ps -q -f name=tk3c-airflow_scheduler) /dataflow/.venv/bin/airflow dags trigger tk3c_producer
 
-# 只重跑某一個分類：網頁上點該 task 的方塊 → Clear
+# 只重跑某一個分類：直接執行該分類（不經過 RabbitMQ）
+docker exec $(docker ps -q -f name=tk3c_celery-worker) python -m app.run_crawl tk3c 冰箱
 
 # 專題 image 升版後，Airflow 要跟著改用新版（只需重新部署 Airflow stack）
-AIRFLOW_IMAGE_VERSION=0.0.1 TK3C_IMAGE_VERSION=<新版本> \
+AIRFLOW_IMAGE_VERSION=0.0.2 TK3C_IMAGE_VERSION=<新版本> \
   docker stack deploy --with-registry-auth -c airflow/docker-compose-airflow.yml tk3c-airflow
 ```
 
-改回 Celery 排程：在 Airflow 暫停 `tk3c_daily_crawl`，並把 `docker-compose-swarm.yml` 裡 `celery-beat` 的 `replicas` 改回 1 後重新部署（兩個不能同時開）。
+改回 Celery 排程：在 Airflow 暫停 `tk3c_producer`，並把 `docker-compose-swarm.yml` 裡 `celery-beat` 的 `replicas` 改回 1 後重新部署（兩個不能同時開）。
 
 ## Redash 視覺化
 

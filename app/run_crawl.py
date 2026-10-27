@@ -1,11 +1,10 @@
 """
-執行單一平台、單一分類的爬蟲並寫入資料庫，給 Airflow 的 DockerOperator 呼叫：
+不經過 RabbitMQ，直接執行單一平台、單一分類的爬蟲並寫入資料庫（手動補爬或測試用）：
 
     python -m app.run_crawl tk3c 冰箱
     python -m app.run_crawl pchome 掃地機器人
 
-沒抓到資料或寫入失敗時以非 0 結束，Airflow 會把這個 task 標成失敗並依設定重試
-（Celery 版的重試邏輯在 app/tasks.py，兩者擇一使用）
+沒抓到資料或寫入失敗時以非 0 結束（每日排程走 app/producer.py → RabbitMQ → app/tasks.py）
 """
 import sys
 

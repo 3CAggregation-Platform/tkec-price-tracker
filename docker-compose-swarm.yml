@@ -78,6 +78,7 @@ services:
         constraints: [node.role==manager]
     networks:
       - tk3c_swarm_network
+      - tk3c_attachable_network  # 讓 Airflow 啟動的 producer container 送得進任務
 
   flower:
     image: mher/flower:2.0
@@ -152,8 +153,8 @@ services:
       - celerybeat_data:/app/celerybeat-data
     deploy:
       mode: replicated
-      # 每日排程已改由 Airflow 負責（airflow/dags/tk3c_daily_crawl.py），beat 停用避免同一類別一天被爬兩次
-      # 要改回 Celery 排程時把這裡改成 1，並在 Airflow 暫停 tk3c_daily_crawl（beat 最多只能 1 個）
+      # 每日排程已改由 Airflow 的 producer 負責（airflow/dags/tk3c_producer.py），beat 停用避免同一類別一天被爬兩次
+      # 要改回 Celery 排程時把這裡改成 1，並在 Airflow 暫停 tk3c_producer（beat 最多只能 1 個）
       replicas: 0
       restart_policy:
         condition: any

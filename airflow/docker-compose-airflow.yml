@@ -2,12 +2,13 @@
 #
 # 部署前先載入 .env 的變數，再指定兩個 image 的版本：
 #   set -a; source .env; set +a
-#   AIRFLOW_IMAGE_VERSION=0.0.1 TK3C_IMAGE_VERSION=0.0.3 \
+#   AIRFLOW_IMAGE_VERSION=0.0.2 TK3C_IMAGE_VERSION=0.0.4 \
 #     docker stack deploy --with-registry-auth -c airflow/docker-compose-airflow.yml tk3c-airflow
 #
 # 和課程版本的差異：
 # - metadata 存在本專題 MySQL 的 airflow 資料庫，帳密由環境變數帶入，不寫進 airflow.cfg / image
-# - 所有服務都在 tk3c_attachable_network，連得到 tk3c_mysql；DockerOperator 啟動的爬蟲 container 也加入這個網路
+# - 所有服務都在 tk3c_attachable_network，連得到 tk3c_mysql；DockerOperator 啟動的 producer container
+#   也加入這個網路，把爬蟲任務送進 tk3c_rabbitmq，由 tk3c stack 的 celery-worker 執行
 # - swarm 會忽略 depends_on，所以 webserver / scheduler / worker 先用 db check-migrations 等資料庫初始化完成
 # - initdb、create-user 只在失敗時重啟（swarm 預設跑完也會重啟，會一直重跑）
 # - 只保留一個 worker（課程的 twse / tpex worker 本專題用不到）
@@ -102,12 +103,11 @@ services:
     command: sh -c "/dataflow/.venv/bin/airflow db check-migrations -t 600 && /dataflow/.venv/bin/airflow celery worker --without-mingle --without-gossip -H celery@%h"
     environment:
       <<: *airflow-env
-      # 只有 worker 需要專題資料庫的帳密（傳給 DockerOperator 啟動的爬蟲 container）
-      MYSQL_USER: tk3c_user
-      MYSQL_DATABASE: ${MYSQL_DATABASE}
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      # 只有 worker 需要 RabbitMQ 的帳密（傳給 DockerOperator 啟動的 producer container）
+      RABBITMQ_USER: ${RABBITMQ_USER}
+      RABBITMQ_PASS: ${RABBITMQ_PASS}
     volumes:
-      # DockerOperator 透過主機的 docker 啟動爬蟲 container
+      # DockerOperator 透過主機的 docker 啟動 producer container
       - /var/run/docker.sock:/var/run/docker.sock
     deploy: *deploy-always
     networks:
