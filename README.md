@@ -8,14 +8,14 @@
   - 燦坤：搜尋頁的排行榜區塊，不足 20 筆再從搜尋結果補齊
   - PChome：搜尋 API 依銷量排序，以館別代碼與分類代碼排除配件後取前 20 筆
 - 使用 MySQL 儲存商品主檔與每日價格歷史，方便追蹤價格變化趨勢
-- 使用 Celery 每天自動排程爬取，爬蟲失敗會自動重試
+- 使用 Airflow 每天自動排程爬取（DockerOperator 啟動爬蟲 container），失敗會自動重試，可在網頁上查看每次執行的狀態與 log
 - 使用 Redash 視覺化兩個平台的價格走勢、價格比較、排行榜、降價商品與評價
 - 使用 Docker Compose（開發）與 Docker Swarm（部署）容器化所有服務
 
 ## 技術架構
 
 - **爬蟲**：Python（燦坤解析 HTML、PChome 呼叫搜尋 API）
-- **排程**：Celery + RabbitMQ，Flower 監控任務
+- **排程**：Airflow（swarm 部署）；Celery + RabbitMQ 保留給手動補爬，Flower 監控任務
 - **API**：FastAPI
 - **資料庫**：MySQL 8
 - **視覺化**：Redash
@@ -32,8 +32,9 @@
 tk3c-price-tracker/
 ├── app/                           # 所有 Python 程式
 │   ├── main.py                    # FastAPI 查詢 API
-│   ├── celery_app.py              # Celery 設定與每日排程
-│   ├── tasks.py                   # Celery 爬蟲任務（含自動重試）
+│   ├── celery_app.py              # Celery 設定（beat 排程在 swarm 已停用，改由 Airflow 負責）
+│   ├── tasks.py                   # Celery 爬蟲任務（含自動重試），用於手動補爬
+│   ├── run_crawl.py               # 執行單一平台 + 分類的爬蟲，給 Airflow DockerOperator 呼叫
 │   ├── db.py                      # 資料庫連線與寫入
 │   └── special_topic3C/           # 爬蟲
 │       ├── fridge_search.py       # 燦坤冰箱
@@ -45,6 +46,10 @@ tk3c-price-tracker/
 │   ├── init.sql                   # 資料庫初始化 schema（新建資料庫用）
 │   └── migrations/                # 既有資料庫的結構變更
 ├── data/                          # 爬蟲單獨執行時輸出的 CSV
+├── airflow/
+│   ├── dags/tk3c_daily_crawl.py   # 每日爬蟲 DAG
+│   ├── Dockerfile                 # 以課程的 tibame_dataflow image 為底，加入本專題的 DAG
+│   └── docker-compose-airflow.yml # Airflow swarm stack
 ├── redash/
 │   ├── queries/                   # 儀表板 6 個查詢的 SQL
 │   └── setup_redash.py            # 透過 Redash API 建立資料來源、查詢、圖表與儀表板
@@ -132,7 +137,7 @@ docker logs --tail 20 tk3c_mysql
 
 ### 手動觸發爬蟲（補跑當天資料）
 
-排程時間：燦坤 20:00 起、PChome 20:40 起，每 10 分鐘一個分類（見 `app/celery_app.py`）。
+每日排程由 Airflow 負責（見下方「Airflow 排程」）。以下是 Celery 版的手動補爬方式，Airflow 上也可以直接在網頁重跑（見「Airflow 排程」）。
 
 排程時間錯過、或任務失敗時，可以手動送出任務（只補跑部分分類時，刪掉不需要的任務名稱即可）：
 
@@ -175,6 +180,7 @@ DELETE FROM products WHERE id = <商品 id>;
 | Flower（Celery 任務監控） | http://localhost:5555 |
 | RabbitMQ 管理介面 | http://localhost:15672 |
 | Redash 儀表板 | http://localhost:5005/dashboards/1-tk3c- |
+| Airflow（帳號 admin，密碼見 `.env` 的 `AIRFLOW_ADMIN_PASSWORD`） | http://localhost:8090 |
 
 ## Docker Swarm 部署
 
@@ -203,6 +209,8 @@ docker push pennyliu32/tk3c-price-tracker:0.0.1
 
 # 4. 建立專題用的 overlay 網路（只需建立一次）
 docker network create --scope=swarm --driver=overlay tk3c_swarm_network
+# Airflow 和它啟動的爬蟲 container 用這個 attachable 網路連 MySQL
+docker network create --scope=swarm --driver=overlay --attachable tk3c_attachable_network
 
 # 5. 停掉 compose 版本（不要加 -v，會刪掉資料庫）
 docker compose down
@@ -247,6 +255,57 @@ docker stack rm tk3c
 docker compose up -d
 ```
 
+## Airflow 排程
+
+每日爬蟲由 Airflow 的 `tk3c_daily_crawl` DAG 負責，swarm 版的 `celery-beat` 已設為 0 個副本，避免同一分類一天被爬兩次。
+
+- 參考課程 `dataflow` 的做法：image 以 `linsamtw/tibame_dataflow:0.0.7`（Airflow 2.7.3）為底，只加入本專題的 DAG；用 DockerOperator 啟動 `pennyliu32/tk3c-price-tracker` 執行 `python -m app.run_crawl <平台> <分類>`，跑完自動刪除 container
+- 每天 20:00 開始，燦坤、PChome 兩條線同時跑；同一個網站的 4 個分類依序跑（約 5 分鐘全部完成）
+- 每個 task 失敗後隔 5 分鐘重試，最多 3 次
+- metadata 存在本專題 MySQL 的 `airflow` 資料庫（專用帳號 `airflow`，只能存取這個資料庫）
+- 帳密、金鑰都由 `.env` 的 `AIRFLOW_*` 在部署時帶入，不會打包進 image
+
+### 第一次部署
+
+```bash
+# 1. 在 .env 加上 AIRFLOW_DB_PASSWORD、AIRFLOW_FERNET_KEY、AIRFLOW_SECRET_KEY、AIRFLOW_ADMIN_PASSWORD（隨機產生）
+set -a; source .env; set +a
+
+# 2. 建立 metadata 資料庫與專用帳號
+docker exec -e AP="$AIRFLOW_DB_PASSWORD" $(docker ps -q -f name=tk3c_mysql) sh -c 'mysql -uroot -p"$MYSQL_ROOT_PASSWORD" -e "
+CREATE DATABASE IF NOT EXISTS airflow CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE USER IF NOT EXISTS '\''airflow'\''@'\''%'\'' IDENTIFIED BY '\''$AP'\'';
+GRANT ALL PRIVILEGES ON airflow.* TO '\''airflow'\''@'\''%'\'';"'
+
+# 3. 確認節點有 airflow 標籤（課程設定過就不用再做）
+docker node update --label-add airflow=true $(docker node ls -q)
+
+# 4. build Airflow image 後部署（TK3C_IMAGE_VERSION 是爬蟲要用的專題 image 版本）
+docker build -t pennyliu32/tk3c-airflow:0.0.1 airflow
+AIRFLOW_IMAGE_VERSION=0.0.1 TK3C_IMAGE_VERSION=0.0.3 \
+  docker stack deploy --with-registry-auth -c airflow/docker-compose-airflow.yml tk3c-airflow
+```
+
+DAG 部署後會自動啟用，而且會馬上補跑「最近一次」的排程（`catchup=False` 只是不補跑更早的），所以部署當下會先跑一輪。
+
+### 常用操作
+
+```bash
+# 各 service 狀態（initdb、create-user 跑完是 0/1 Complete，屬正常）
+docker stack services tk3c-airflow
+
+# 手動觸發一次（網頁上按 DAG 右邊的 ▶ 也可以）
+docker exec $(docker ps -q -f name=tk3c-airflow_scheduler) /dataflow/.venv/bin/airflow dags trigger tk3c_daily_crawl
+
+# 只重跑某一個分類：網頁上點該 task 的方塊 → Clear
+
+# 專題 image 升版後，Airflow 要跟著改用新版（只需重新部署 Airflow stack）
+AIRFLOW_IMAGE_VERSION=0.0.1 TK3C_IMAGE_VERSION=<新版本> \
+  docker stack deploy --with-registry-auth -c airflow/docker-compose-airflow.yml tk3c-airflow
+```
+
+改回 Celery 排程：在 Airflow 暫停 `tk3c_daily_crawl`，並把 `docker-compose-swarm.yml` 裡 `celery-beat` 的 `replicas` 改回 1 後重新部署（兩個不能同時開）。
+
 ## Redash 視覺化
 
 使用課程部署的 Redash（swarm stack `redash`，http://localhost:5005），連到本專案的 MySQL。
@@ -263,7 +322,7 @@ docker compose up -d
 | 爬蟲每日執行狀態（正常每天 8 筆） | 堆疊長條圖 | `q6_crawl_status.sql` |
 
 - 欄位名稱加上 `::filter`（例如 `分類::filter`）會變成篩選器，儀表板開啟了篩選器合併，最上方的「分類」會同時套用到所有圖表
-- 查詢每天 21:30 自動重新整理（PChome 最後一個分類 21:10 跑完之後）；Redash 的排程時間以 UTC 儲存，所以腳本裡寫 `13:30`
+- 查詢每天 21:30 自動重新整理（Airflow 的爬蟲約 20:05 跑完）；Redash 的排程時間以 UTC 儲存，所以腳本裡寫 `13:30`
 
 ### 連線方式
 
@@ -297,6 +356,7 @@ swarm 版的 MySQL container 名稱帶亂數，第 1 步的 `tk3c_mysql` 改成 
 - [x] MySQL 資料庫架構設計（products + price_history + crawl_log）
 - [x] 排程自動化（Celery + RabbitMQ + Flower），失敗自動重試
 - [x] 使用 Docker Swarm 部署
+- [x] 使用 Airflow 取代 Celery beat 排程每日爬蟲
 - [x] 使用 Redash 視覺化價格走勢與比價
 
 ## 未來規劃

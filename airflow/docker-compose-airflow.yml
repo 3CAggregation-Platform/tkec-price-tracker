@@ -1,0 +1,118 @@
+# Airflow Swarm 部署（參考課程 dataflow/docker-compose-airflow.yml）
+#
+# 部署前先載入 .env 的變數，再指定兩個 image 的版本：
+#   set -a; source .env; set +a
+#   AIRFLOW_IMAGE_VERSION=0.0.1 TK3C_IMAGE_VERSION=0.0.3 \
+#     docker stack deploy --with-registry-auth -c airflow/docker-compose-airflow.yml tk3c-airflow
+#
+# 和課程版本的差異：
+# - metadata 存在本專題 MySQL 的 airflow 資料庫，帳密由環境變數帶入，不寫進 airflow.cfg / image
+# - 所有服務都在 tk3c_attachable_network，連得到 tk3c_mysql；DockerOperator 啟動的爬蟲 container 也加入這個網路
+# - swarm 會忽略 depends_on，所以 webserver / scheduler / worker 先用 db check-migrations 等資料庫初始化完成
+# - initdb、create-user 只在失敗時重啟（swarm 預設跑完也會重啟，會一直重跑）
+# - 只保留一個 worker（課程的 twse / tpex worker 本專題用不到）
+version: '3.8'
+
+x-airflow-env: &airflow-env
+  AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: mysql+pymysql://airflow:${AIRFLOW_DB_PASSWORD}@tk3c_mysql:3306/airflow
+  AIRFLOW__CORE__SQL_ALCHEMY_CONN: mysql+pymysql://airflow:${AIRFLOW_DB_PASSWORD}@tk3c_mysql:3306/airflow
+  AIRFLOW__CORE__FERNET_KEY: ${AIRFLOW_FERNET_KEY}
+  AIRFLOW__CORE__LOAD_EXAMPLES: "False"
+  AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "False"  # DAG 部署後直接啟用，取代 Celery beat
+  # 用 IP 當作 worker 的主機名稱，webserver 才找得到 worker 讀取 task log
+  AIRFLOW__CORE__HOSTNAME_CALLABLE: airflow.utils.net.get_host_ip_address
+  AIRFLOW__WEBSERVER__SECRET_KEY: ${AIRFLOW_SECRET_KEY}
+  AIRFLOW__WEBSERVER__BASE_URL: http://localhost:8090
+  AIRFLOW__CELERY__BROKER_URL: redis://airflow-redis:6379/0
+  AIRFLOW__CELERY__RESULT_BACKEND: redis://airflow-redis:6379/1
+  TK3C_IMAGE: pennyliu32/tk3c-price-tracker:${TK3C_IMAGE_VERSION}
+  TK3C_NETWORK: tk3c_attachable_network
+  TZ: Asia/Taipei
+
+x-deploy-once: &deploy-once
+  mode: replicated
+  replicas: 1
+  restart_policy:
+    condition: on-failure
+  placement:
+    constraints: [node.labels.airflow==true]
+
+x-deploy-always: &deploy-always
+  mode: replicated
+  replicas: 1
+  restart_policy:
+    condition: any
+  placement:
+    constraints: [node.labels.airflow==true]
+
+services:
+
+  # 初始化 / 升級 Airflow 的 metadata 資料庫
+  initdb:
+    image: pennyliu32/tk3c-airflow:${AIRFLOW_IMAGE_VERSION}
+    command: /dataflow/.venv/bin/airflow db migrate
+    environment: *airflow-env
+    deploy: *deploy-once
+    networks:
+      - tk3c_attachable_network
+
+  # 建立管理員帳號（帳號已存在時 airflow 會回報錯誤，所以用 || true 略過）
+  create-user:
+    image: pennyliu32/tk3c-airflow:${AIRFLOW_IMAGE_VERSION}
+    command: >-
+      sh -c "/dataflow/.venv/bin/airflow db check-migrations -t 600 &&
+      (/dataflow/.venv/bin/airflow users create --username admin --password ${AIRFLOW_ADMIN_PASSWORD}
+      --firstname tk3c --lastname admin --role Admin --email admin@example.com || true)"
+    environment: *airflow-env
+    deploy: *deploy-once
+    networks:
+      - tk3c_attachable_network
+
+  # Celery 的 broker：scheduler 把 task 放進來，worker 取出執行
+  # 不要命名為 redis，避免和其他 stack 的 redis 撞名（課程踩過的坑）
+  airflow-redis:
+    image: redis:7-alpine
+    deploy: *deploy-always
+    networks:
+      - tk3c_attachable_network
+
+  webserver:
+    image: pennyliu32/tk3c-airflow:${AIRFLOW_IMAGE_VERSION}
+    command: sh -c "/dataflow/.venv/bin/airflow db check-migrations -t 600 && /dataflow/.venv/bin/airflow webserver -p 8080"
+    environment: *airflow-env
+    ports:
+      - "8090:8080"
+    deploy: *deploy-always
+    networks:
+      - tk3c_attachable_network
+
+  scheduler:
+    image: pennyliu32/tk3c-airflow:${AIRFLOW_IMAGE_VERSION}
+    command: sh -c "/dataflow/.venv/bin/airflow db check-migrations -t 600 && /dataflow/.venv/bin/airflow scheduler"
+    environment: *airflow-env
+    deploy: *deploy-always
+    networks:
+      - tk3c_attachable_network
+
+  worker:
+    image: pennyliu32/tk3c-airflow:${AIRFLOW_IMAGE_VERSION}
+    hostname: "airflow-worker.{{.Task.Slot}}"
+    # --without-mingle / --without-gossip：課程踩過的坑，避免 Redis 殘留的 reply queue 卡住 worker 啟動
+    # -H 一定要給，沒指定時新版 Celery 拿到的 worker 名稱是 None，啟動就會當掉
+    command: sh -c "/dataflow/.venv/bin/airflow db check-migrations -t 600 && /dataflow/.venv/bin/airflow celery worker --without-mingle --without-gossip -H celery@%h"
+    environment:
+      <<: *airflow-env
+      # 只有 worker 需要專題資料庫的帳密（傳給 DockerOperator 啟動的爬蟲 container）
+      MYSQL_USER: tk3c_user
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    volumes:
+      # DockerOperator 透過主機的 docker 啟動爬蟲 container
+      - /var/run/docker.sock:/var/run/docker.sock
+    deploy: *deploy-always
+    networks:
+      - tk3c_attachable_network
+
+networks:
+  tk3c_attachable_network:
+    external: true  # 需先建立：docker network create --scope=swarm --driver=overlay --attachable tk3c_attachable_network

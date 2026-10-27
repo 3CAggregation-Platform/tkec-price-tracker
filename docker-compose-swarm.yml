@@ -41,6 +41,7 @@ services:
         constraints: [node.role==manager]
     networks:
       - tk3c_swarm_network
+      - tk3c_attachable_network  # 讓 Airflow 和它啟動的爬蟲 container 連得到資料庫
 
   phpmyadmin:
     image: phpmyadmin:5.2
@@ -151,7 +152,9 @@ services:
       - celerybeat_data:/app/celerybeat-data
     deploy:
       mode: replicated
-      replicas: 1  # 一定只能 1 個，多個 beat 會重複發送排程，同一類別一天被爬好幾次
+      # 每日排程已改由 Airflow 負責（airflow/dags/tk3c_daily_crawl.py），beat 停用避免同一類別一天被爬兩次
+      # 要改回 Celery 排程時把這裡改成 1，並在 Airflow 暫停 tk3c_daily_crawl（beat 最多只能 1 個）
+      replicas: 0
       restart_policy:
         condition: any
       placement:
@@ -162,6 +165,8 @@ services:
 networks:
   tk3c_swarm_network:
     external: true  # 需先手動建立：docker network create --scope=swarm --driver=overlay tk3c_swarm_network
+  tk3c_attachable_network:
+    external: true  # 需先手動建立：docker network create --scope=swarm --driver=overlay --attachable tk3c_attachable_network
 
 volumes:
   mysql_data:
