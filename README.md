@@ -417,7 +417,6 @@ ORDER BY 型號, 售價;
 - [x] 使用 Docker Swarm 部署
 - [x] 使用 Airflow 取代 Celery beat 排程每日爬蟲
 - [x] 使用 Redash 視覺化價格走勢與比價
-- [x] 產生和組員 momo 資料同格式的 `goods_daily`（品牌、型號統一寫法）
 
 ## 未來規劃
 
