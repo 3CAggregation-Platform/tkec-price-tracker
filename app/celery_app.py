@@ -30,47 +30,47 @@ app.conf.beat_schedule = {
     },
     "crawl-tv-daily": {
         "task": "crawl_tv",
-        "schedule": crontab(hour=20, minute=10),  # 錯開時間，避免同時打網站
+        "schedule": crontab(hour=20, minute=5),  # 錯開時間，避免同時打網站
     },
     "crawl-airfryer-daily": {
         "task": "crawl_airfryer",
-        "schedule": crontab(hour=20, minute=20),
+        "schedule": crontab(hour=20, minute=10),
     },
     "crawl-robotvacuum-daily": {
         "task": "crawl_robotvacuum",
-        "schedule": crontab(hour=20, minute=30),
+        "schedule": crontab(hour=20, minute=15),
     },
     "crawl-washer-daily": {
         "task": "crawl_washer",
-        "schedule": crontab(hour=21, minute=20),
+        "schedule": crontab(hour=20, minute=40),
     },
-    # PChome 接在燦坤後面，同樣每 10 分鐘一類
+    # PChome 接在燦坤後面，同樣每 5 分鐘一類
     "crawl-pchome-fridge-daily": {
         "task": "crawl_pchome_fridge",
-        "schedule": crontab(hour=20, minute=40),
+        "schedule": crontab(hour=20, minute=20),
     },
     "crawl-pchome-tv-daily": {
         "task": "crawl_pchome_tv",
-        "schedule": crontab(hour=20, minute=50),
+        "schedule": crontab(hour=20, minute=25),
     },
     "crawl-pchome-airfryer-daily": {
         "task": "crawl_pchome_airfryer",
-        "schedule": crontab(hour=21, minute=0),
+        "schedule": crontab(hour=20, minute=30),
     },
     "crawl-pchome-robotvacuum-daily": {
         "task": "crawl_pchome_robotvacuum",
-        "schedule": crontab(hour=21, minute=10),
+        "schedule": crontab(hour=20, minute=35),
     },
     "crawl-pchome-washer-daily": {
         "task": "crawl_pchome_washer",
-        "schedule": crontab(hour=21, minute=30),
+        "schedule": crontab(hour=20, minute=45),
     },
     "crawl-momo-airfryer-daily": {
         "task": "crawl_momo_airfryer",
-        "schedule": crontab(hour=21, minute=40),
+        "schedule": crontab(hour=20, minute=50),
     },
     "crawl-yahoo-airfryer-daily": {
         "task": "crawl_yahoo_airfryer",
-        "schedule": crontab(hour=21, minute=50),
+        "schedule": crontab(hour=20, minute=55),
     },
 }
