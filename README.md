@@ -364,7 +364,7 @@ sudo mkswap /swapfile && sudo swapon /swapfile
 echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
 
 # 3. 取得程式碼；.env 不在 git 裡，用 SSH 視窗右上角的「上傳檔案」傳到 VM 再搬進專案
-git clone https://github.com/3CAggregation-Platform/3C.git tk3c-price-tracker
+git clone https://github.com/3CAggregation-Platform/tkec-price-tracker.git tk3c-price-tracker
 cd tk3c-price-tracker
 mv ~/.env .
 
@@ -547,7 +547,7 @@ Airflow momo_producer（每天 20:30）→ momo-rabbitmq → momo-worker 爬蟲 
 sudo usermod -aG docker $USER
 
 # 2. 取得部署設定
-git clone https://github.com/3CAggregation-Platform/3C.git tk3c-price-tracker
+git clone https://github.com/3CAggregation-Platform/tkec-price-tracker.git tk3c-price-tracker
 cd tk3c-price-tracker/momo
 
 # 3. 建立 momo/.env（三個值向 VM 管理者拿；.env 不會進 git）
