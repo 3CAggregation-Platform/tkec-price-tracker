@@ -28,6 +28,7 @@ x-airflow-env: &airflow-env
   AIRFLOW__CELERY__RESULT_BACKEND: redis://airflow-redis:6379/1
   TK3C_IMAGE: pennyliu32/tk3c-price-tracker:${TK3C_IMAGE_VERSION}
   TK3C_NETWORK: tk3c_attachable_network
+  MOMO_IMAGE: bihruwang/momo_crawler:${MOMO_IMAGE_VERSION:-0.0.2}  # 組員 momo 爬蟲（momo_producer DAG 用）
   TZ: Asia/Taipei
 
 x-deploy-once: &deploy-once
@@ -106,6 +107,9 @@ services:
       # 只有 worker 需要 RabbitMQ 的帳密（傳給 DockerOperator 啟動的 producer container）
       RABBITMQ_USER: ${RABBITMQ_USER}
       RABBITMQ_PASS: ${RABBITMQ_PASS}
+      # 組員 momo stack 的 RabbitMQ 帳密（傳給 momo_producer 啟動的 container）
+      MOMO_RABBITMQ_USER: ${MOMO_RABBITMQ_USER}
+      MOMO_RABBITMQ_PASS: ${MOMO_RABBITMQ_PASS}
     volumes:
       # DockerOperator 透過主機的 docker 啟動 producer container
       - /var/run/docker.sock:/var/run/docker.sock

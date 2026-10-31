@@ -1,0 +1,64 @@
+# 組員 momo 爬蟲（bihruwang/ecommerce_crawler）在 GCP VM 上的 swarm stack
+#
+# 由組員自行部署 / 更新（在自己的 clone 裡建立 momo/.env，內容見 README「組員 momo 爬蟲」）：
+#   cd momo && set -a; source .env; set +a
+#   MOMO_IMAGE_VERSION=0.0.2 docker stack deploy --with-registry-auth -c docker-compose-momo.yml momo
+#
+# 設計重點：
+# - 用自己的 RabbitMQ：組員程式和本專題的 worker 都聽預設的 celery 佇列，共用會互搶任務
+# - 資料寫進同一台 MySQL（tk3c_mysql）的 mydb 資料庫（組員程式寫死 mydb），
+#   帳號 momo_writer 只能存取 mydb，碰不到本專題的 tk3c_price_tracker
+# - 每日排程由本專題的 Airflow DAG momo_producer 觸發（20:30），這個 stack 只負責接任務、爬蟲、寫入
+# - service 名稱加上 momo- 前綴，避免和 tk3c stack 在 tk3c_attachable_network 上的 rabbitmq 撞名
+version: '3.8'
+
+x-deploy: &deploy
+  mode: replicated
+  replicas: 1
+  restart_policy:
+    condition: any
+
+services:
+
+  momo-rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - "15673:15672"  # 管理介面（15672 已被 tk3c 的 RabbitMQ 使用）
+    environment:
+      RABBITMQ_DEFAULT_USER: ${MOMO_RABBITMQ_USER}
+      RABBITMQ_DEFAULT_PASS: ${MOMO_RABBITMQ_PASS}
+      TZ: Asia/Taipei
+    deploy:
+      <<: *deploy
+      resources:
+        limits:
+          memory: 512M
+    networks:
+      - tk3c_attachable_network  # Airflow 啟動的 producer container 從這個網路送任務進來
+
+  momo-worker:
+    image: bihruwang/momo_crawler:${MOMO_IMAGE_VERSION}
+    hostname: "momo-worker"
+    # 不用 --env-file=.env：設定全部由下方 environment 帶入，image 裡不需要 .env
+    command: uv run celery -A crawler.worker worker --loglevel=info --hostname=momo@%h
+    environment:
+      RABBITMQ_HOST: momo_momo-rabbitmq
+      RABBITMQ_PORT: "5672"
+      WORKER_ACCOUNT: ${MOMO_RABBITMQ_USER}
+      WORKER_PASSWORD: ${MOMO_RABBITMQ_PASS}
+      MYSQL_HOST: tk3c_mysql
+      MYSQL_PORT: "3306"
+      MYSQL_ACCOUNT: momo_writer
+      MYSQL_PASSWORD: ${MOMO_DB_PASSWORD}
+      TZ: Asia/Taipei
+    deploy:
+      <<: *deploy
+      resources:
+        limits:
+          memory: 768M
+    networks:
+      - tk3c_attachable_network  # 連 momo-rabbitmq 與 tk3c_mysql
+
+networks:
+  tk3c_attachable_network:
+    external: true
