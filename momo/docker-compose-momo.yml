@@ -10,6 +10,8 @@
 #   帳號 momo_writer 只能存取 mydb，碰不到本專題的 tk3c_price_tracker
 # - 每日排程由本專題的 Airflow DAG momo_producer 觸發（20:30），這個 stack 只負責接任務、爬蟲、寫入
 # - momo-flower（port 5556）讓組員監控自己的任務
+# - momo-phpmyadmin（port 8081）需要登入，組員用 momo_writer 只看得到 mydb；
+#   本專題的 phpMyAdmin（8080）會自動以 root 登入，不能給組員
 # - service 名稱加上 momo- 前綴，避免和 tk3c stack 在 tk3c_attachable_network 上的 rabbitmq 撞名
 version: '3.8'
 
@@ -51,6 +53,21 @@ services:
           memory: 256M
     networks:
       - tk3c_attachable_network
+
+  momo-phpmyadmin:
+    image: phpmyadmin:5.2
+    ports:
+      - "8081:80"  # 8080 是本專題的 phpMyAdmin
+    environment:
+      PMA_HOST: tk3c_mysql  # 不設 PMA_USER / PMA_PASSWORD：開網頁時要自己登入
+      TZ: Asia/Taipei
+    deploy:
+      <<: *deploy
+      resources:
+        limits:
+          memory: 256M
+    networks:
+      - tk3c_attachable_network  # 連 tk3c_mysql
 
   momo-worker:
     image: bihruwang/momo_crawler:${MOMO_IMAGE_VERSION}
