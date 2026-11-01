@@ -516,15 +516,26 @@ Airflow momo_producer（每天 20:30）→ momo-rabbitmq → momo-worker 爬蟲 
    MOMO_RABBITMQ_PASS=...
    ```
 
-3. **建立 `mydb` 資料庫與 `momo_writer` 帳號**（Redash 唯讀帳號也一併開放讀取）：
+3. **建立 `mydb` 資料庫與 `momo_writer` 帳號**：
 
    ```bash
    set -a; source .env; set +a
    docker exec -e MP="$MOMO_DB_PASSWORD" $(docker ps -q -f name=tk3c_mysql) sh -c 'mysql -uroot -p"$MYSQL_ROOT_PASSWORD" -e "
    CREATE DATABASE IF NOT EXISTS mydb CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
    CREATE USER IF NOT EXISTS '\''momo_writer'\''@'\''%'\'' IDENTIFIED BY '\''$MP'\'';
-   GRANT ALL PRIVILEGES ON mydb.* TO '\''momo_writer'\''@'\''%'\'';
-   GRANT SELECT ON mydb.* TO '\''redash_reader'\''@'\''%'\'';"'
+   GRANT ALL PRIVILEGES ON mydb.* TO '\''momo_writer'\''@'\''%'\'';"'
+   ```
+
+   Redash 唯讀帳號 `redash_reader` 建立後，再補上 `GRANT SELECT ON mydb.* TO 'redash_reader'@'%';`（帳號不存在時 MySQL 會報 ERROR 1410）。
+
+   momo stack 部署好之後，`momo_goods_daily` 表由組員的 `load_csv_to_mysql` 建立並匯入歷史 CSV（只跑一次，它用 replace 會整張重建）。組員的 image 沒有包 `data/`，所以從 GitHub 取 CSV 複製進 worker 再執行：
+
+   ```bash
+   git clone --depth 1 https://github.com/bihruwang/ecommerce_crawler.git ~/momo_src
+   C=$(docker ps -q -f name=momo_momo-worker)
+   docker cp ~/momo_src/data/. $C:/crawler/data/
+   docker exec $C uv run python -m crawler.load_csv_to_mysql
+   rm -rf ~/momo_src
    ```
 
 4. **Airflow 加入 `momo_producer` DAG**：本機 build 新版 Airflow image 推上 Docker Hub，VM 上 `git pull` 後重新部署：
@@ -573,7 +584,7 @@ docker stack services momo
 docker service logs --since 2h momo_momo-worker 2>&1 | tail -50
 
 # 今天寫入幾筆
-docker exec $(docker ps -q -f name=tk3c_mysql) sh -c 'mysql -umomo_writer -p"'"$MOMO_DB_PASSWORD"'" mydb -e "SELECT 抓取日期, 分類, COUNT(*) FROM momo_goods_daily GROUP BY 抓取日期, 分類 ORDER BY 抓取日期 DESC LIMIT 8;"'
+docker exec $(docker ps -q -f name=tk3c_mysql) sh -c 'mysql --default-character-set=utf8mb4 -umomo_writer -p"'"$MOMO_DB_PASSWORD"'" mydb -e "SELECT 抓取日期, 分類, COUNT(*) FROM momo_goods_daily GROUP BY 抓取日期, 分類 ORDER BY 抓取日期 DESC LIMIT 8;"'
 ```
 
 不用等到 20:30，也可以在 Airflow 網頁（port 8090）按 `momo_producer` 右邊的 ▶ 手動跑一次。
