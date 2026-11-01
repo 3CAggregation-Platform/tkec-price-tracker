@@ -551,6 +551,28 @@ Airflow momo_producer（每天 20:30）→ momo-rabbitmq → momo-worker 爬蟲 
      docker stack deploy --with-registry-auth -c airflow/docker-compose-airflow.yml tk3c-airflow
    ```
 
+5. **組員的 Airflow 帳號（只能操作 `momo_producer`）**：`momo_producer.py` 設了 `access_control`，只開放給角色 `momo`。角色 `momo` 是複製內建 User 角色、拿掉「所有 DAG」權限而成，所以組員看不到 `tk3c_producer`，但能看、觸發、重跑自己的 DAG 和看 log。
+
+   角色**一定要在部署含 `access_control` 的 DAG 之前建立**，否則 Airflow 找不到角色，`momo_producer` 會載入失敗。
+
+   ```bash
+   # 本機：build 含 access_control 的 Airflow image
+   docker build -t pennyliu32/tk3c-airflow:0.0.4 airflow && docker push pennyliu32/tk3c-airflow:0.0.4
+
+   # VM：先建角色（用目前還在跑的 webserver），再部署新版，最後建立組員帳號
+   git pull
+   docker exec -i $(docker ps -q -f name=tk3c-airflow_webserver) /dataflow/.venv/bin/python - < airflow/create_momo_role.py
+   set -a; source .env; set +a
+   AIRFLOW_IMAGE_VERSION=0.0.4 TK3C_IMAGE_VERSION=<目前版本> MOMO_IMAGE_VERSION=0.0.2 \
+     docker stack deploy --with-registry-auth -c airflow/docker-compose-airflow.yml tk3c-airflow
+   # 等 1～2 分鐘，docker stack services tk3c-airflow 全部 1/1 後再繼續
+   docker exec $(docker ps -q -f name=tk3c-airflow_webserver) /dataflow/.venv/bin/airflow sync-perm --include-dags
+   docker exec $(docker ps -q -f name=tk3c-airflow_webserver) /dataflow/.venv/bin/airflow users create \
+     --username momo --password '<自訂密碼>' --firstname momo --lastname member --role momo --email momo@example.com
+   ```
+
+   之後再有組員加入，照同樣做法：在 `create_momo_role.py` 改角色名稱建一個新角色，在他的 DAG 加上對應的 `access_control`。
+
 ### 組員：部署與更新
 
 第一次用瀏覽器 SSH 連進 VM 後：

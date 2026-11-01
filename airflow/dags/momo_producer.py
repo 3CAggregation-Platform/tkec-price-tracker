@@ -33,6 +33,9 @@ with DAG(
     catchup=False,
     max_active_runs=1,
     tags=["momo", "producer"],
+    # 組員的 Airflow 帳號（角色 momo）只看得到、操作得了這個 DAG
+    # 角色要先用 airflow/create_momo_role.py 建好，否則這個 DAG 會載入失敗
+    access_control={"momo": {"can_read", "can_edit"}},
 ) as dag:
     DockerOperator(
         task_id="producer_momo_crawler",
