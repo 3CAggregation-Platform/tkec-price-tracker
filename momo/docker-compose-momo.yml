@@ -9,6 +9,7 @@
 # - 資料寫進同一台 MySQL（tk3c_mysql）的 mydb 資料庫（組員程式寫死 mydb），
 #   帳號 momo_writer 只能存取 mydb，碰不到本專題的 tk3c_price_tracker
 # - 每日排程由本專題的 Airflow DAG momo_producer 觸發（20:30），這個 stack 只負責接任務、爬蟲、寫入
+# - momo-flower（port 5556）讓組員監控自己的任務
 # - service 名稱加上 momo- 前綴，避免和 tk3c stack 在 tk3c_attachable_network 上的 rabbitmq 撞名
 version: '3.8'
 
@@ -35,6 +36,21 @@ services:
           memory: 512M
     networks:
       - tk3c_attachable_network  # Airflow 啟動的 producer container 從這個網路送任務進來
+
+  momo-flower:
+    image: mher/flower:2.0
+    command: celery --broker=amqp://${MOMO_RABBITMQ_USER}:${MOMO_RABBITMQ_PASS}@momo_momo-rabbitmq:5672// flower
+    ports:
+      - "5556:5555"  # 5555 已被 tk3c 的 Flower 使用
+    environment:
+      TZ: Asia/Taipei
+    deploy:
+      <<: *deploy
+      resources:
+        limits:
+          memory: 256M
+    networks:
+      - tk3c_attachable_network
 
   momo-worker:
     image: bihruwang/momo_crawler:${MOMO_IMAGE_VERSION}

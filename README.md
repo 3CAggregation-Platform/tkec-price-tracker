@@ -435,7 +435,7 @@ GCP 預設不開放這些 port，要在「VPC 網路 → 防火牆 → 建立虛
 | 流量方向 / 動作 | 輸入 / 允許 |
 | 目標 | 網路中的所有執行個體 |
 | 來源 IPv4 範圍 | **只填自己的 IP**，例如 `x.x.x.x/32`（可到 https://api.ipify.org 查） |
-| 通訊協定和通訊埠 | TCP `8080,15672,5555,8090,15673`（phpMyAdmin、RabbitMQ、Flower、Airflow、組員的 RabbitMQ，需要哪個開哪個） |
+| 通訊協定和通訊埠 | TCP `8080,15672,5555,8090,15673,5556`（phpMyAdmin、RabbitMQ、Flower、Airflow、組員的 RabbitMQ 與 Flower，需要哪個開哪個） |
 
 - 不要用 `0.0.0.0/0`：phpMyAdmin 可用 root 登入，Flower 沒有密碼，開放給所有人很危險
 - 換網路（家裡、學校、手機熱點）後 IP 會變，要回來更新來源範圍
@@ -497,6 +497,7 @@ Airflow momo_producer（每天 20:30）→ momo-rabbitmq → momo-worker 爬蟲 
 |---|---|---|
 | Stack | `momo`（`momo/docker-compose-momo.yml`） | 組員可獨立更新，不影響 tk3c stack |
 | RabbitMQ | 獨立的 `momo-rabbitmq`（管理介面 port 15673） | 兩邊程式都用預設 `celery` 佇列，共用會互搶任務 |
+| Flower | 獨立的 `momo-flower`（port 5556） | 組員監控自己的任務 |
 | 資料庫 | 同一台 MySQL 的 `mydb` 資料庫 | 組員程式寫死 `mydb`；不用改程式 |
 | MySQL 帳號 | `momo_writer`，只能存取 `mydb` | 碰不到本專題的 `tk3c_price_tracker` |
 | 排程 | 本專題 Airflow 的 `momo_producer` DAG | 和 `tk3c_producer` 一起在 Airflow 網頁上監控 |
@@ -565,7 +566,7 @@ MOMO_IMAGE_VERSION=0.0.2 docker stack deploy --with-registry-auth -c docker-comp
 更新爬蟲程式：推新版 image 到 Docker Hub，再用新的 `MOMO_IMAGE_VERSION` 重跑第 4 步。如果改到 producer（例如增減分類），也請 VM 管理者把 Airflow 的 `MOMO_IMAGE_VERSION` 一起升版。
 
 ```bash
-# 服務狀態（兩個都要是 1/1）
+# 服務狀態（三個都要是 1/1）
 docker stack services momo
 
 # 爬蟲 log
