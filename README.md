@@ -58,6 +58,7 @@ tk3c-price-tracker/
 │       └── yahoo_search.py        # Yahoo 購物中心氣炸鍋
 ├── database/
 │   ├── init.sql                   # 資料庫初始化 schema（新建資料庫用）
+│   ├── backup_mysql.sh            # VM 每日 mysqldump 備份（cron 執行，保留 14 天）
 │   └── migrations/                # 既有資料庫的結構變更
 ├── data/                          # 爬蟲單獨執行時輸出的 CSV
 ├── airflow/
@@ -425,6 +426,39 @@ docker service logs --since 2h tk3c_celery-worker 2>&1 | tail -50
 
 - `run_at` 停在昨天以前：Airflow 沒有觸發，檢查 `docker stack services tk3c-airflow`
 - 有紀錄但失敗或 0 筆：爬蟲本身出錯（網站改版或被擋），看 `crawl_log.message`
+
+### 資料庫備份
+
+兩層備份，都保留 14 天：
+
+| 層 | 內容 | 時間（台灣） | 用途 |
+|---|---|---|---|
+| mysqldump | `tk3c_price_tracker`、`mydb`（組員 momo）、`airflow` 各一個 `.sql.gz`，存在 VM 的 `~/backups` | 每天 21:00（兩個爬蟲都跑完後） | 單獨還原某個資料庫、資料被誤刪時救回 |
+| 磁碟快照 | 整顆 VM 磁碟（快照排程 `default-schedule-1`，region `us-east1`） | 每天 18:00 起 | VM 或磁碟壞掉時整台還原；`~/backups` 也會一起被快照到 VM 之外 |
+
+**mysqldump 排程**（腳本 `database/backup_mysql.sh`，VM 時區是 UTC，所以 cron 寫 13:00）：
+
+```bash
+mkdir -p ~/backups
+(crontab -l 2>/dev/null; echo "0 13 * * * $HOME/tk3c-price-tracker/database/backup_mysql.sh >> $HOME/backups/backup.log 2>&1") | crontab -
+crontab -l                     # 確認排程
+tail ~/backups/backup.log      # 每次備份的紀錄
+```
+
+**從 mysqldump 還原**某個資料庫（會覆蓋該資料庫現有的表）：
+
+```bash
+gunzip -c ~/backups/tk3c_price_tracker_<日期>.sql.gz | \
+  docker exec -i $(docker ps -q -f name=tk3c_mysql) sh -c 'mysql -uroot -p"$MYSQL_ROOT_PASSWORD"'
+```
+
+**磁碟快照**：在 GCP 主控台「Compute Engine → 快照」可以看到每天的快照；要還原時從快照建立新磁碟，再用它建立新 VM。
+
+```bash
+# 把快照排程掛到磁碟上（只需一次，本機有 gcloud 時）
+gcloud compute disks add-resource-policies consumer-electronics-price-search-engine \
+  --zone us-east1-c --resource-policies default-schedule-1
+```
 
 ### 防火牆（開放管理介面）
 
