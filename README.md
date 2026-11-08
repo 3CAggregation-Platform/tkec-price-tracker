@@ -500,8 +500,8 @@ GCP 預設不開放這些 port，要在「VPC 網路 → 防火牆 → 建立虛
   echo "SUPERSET_DB_PASSWORD=$(openssl rand -base64 18 | tr -d '/+=\n')"; } >> .env
 set -a && . ./.env && set +a
 
-# 2. 建立唯讀帳號（all_goods_daily 是 SQL SECURITY DEFINER 的 view，不需要 mydb 的權限）
-docker exec $(docker ps -q -f name=tk3c_mysql) sh -c "mysql -uroot -p\"\$MYSQL_ROOT_PASSWORD\" -e \"CREATE USER IF NOT EXISTS 'superset_reader'@'%' IDENTIFIED BY '$SUPERSET_DB_PASSWORD'; GRANT SELECT ON tk3c_price_tracker.* TO 'superset_reader'@'%';\""
+# 2. 建立唯讀帳號（all_goods_daily 是 SQL SECURITY DEFINER 的 view，不需要 mydb 的權限；SHOW VIEW 讓 Superset 讀得到 view 的欄位）
+docker exec $(docker ps -q -f name=tk3c_mysql) sh -c "mysql -uroot -p\"\$MYSQL_ROOT_PASSWORD\" -e \"CREATE USER IF NOT EXISTS 'superset_reader'@'%' IDENTIFIED BY '$SUPERSET_DB_PASSWORD'; GRANT SELECT, SHOW VIEW ON tk3c_price_tracker.* TO 'superset_reader'@'%';\""
 
 # 3. build image 並部署（image 很大，build 前確認磁碟還有 5 GB 以上）
 docker build -t tk3c-superset:0.0.2 superset
