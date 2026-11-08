@@ -34,6 +34,7 @@
     - `rating` / `review_count`：平均星數與評價則數，PChome、momo、Yahoo 有；燦坤及無人評價的商品為 NULL
   - `crawl_log`：每次爬蟲執行的結果（平台、分類、筆數、成功或沒抓到資料）
   - `goods_daily`：和組員 momo 資料同格式的每日商品表（中文欄位），每次爬蟲寫入後自動同步，用來合併三個平台，見[與組員資料合併](#與組員資料合併)
+  - `all_goods_daily`（view）：`goods_daily` + 組員的 `mydb.momo_goods_daily`，三平台比價、圖表都查這個
 
 ## 專案結構
 
@@ -666,19 +667,23 @@ docker exec -i $(docker ps -q -f name=tk3c_mysql) sh -c 'mysql --default-charact
 uv run python -m app.goods_daily
 ```
 
-把組員的資料匯進同一張表（組員的資料在同一台 MySQL 的 `mydb.momo_goods_daily`，見上方「組員 momo 爬蟲」）：
+組員的資料（同一台 MySQL 的 `mydb.momo_goods_daily`，見上方「組員 momo 爬蟲」）不搬進 `goods_daily`，而是用 view `all_goods_daily` 把兩張表合在一起，組員每天 20:30 爬完就查得到，不用另外同步：
+
+```bash
+# 建立 view（只要跑一次；組員的表要先存在）
+docker exec -i $(docker ps -q -f name=tk3c_mysql) sh -c 'mysql --default-character-set=utf8mb4 -uroot -p"$MYSQL_ROOT_PASSWORD"' < database/migrations/004_add_all_goods_daily_view.sql
+```
+
+- 欄位和 `goods_daily` 相同；組員的資料 `平台` 為 `momo`、`排名` 為 NULL、`連結` 由商品編號組成
+- 組員表的文字欄位 collation（`utf8mb4_unicode_ci`）在 view 裡統一轉成 `utf8mb4_0900_ai_ci`，double 欄位轉成 INT
+- view 為 `SQL SECURITY DEFINER`，Redash / Superset 的唯讀帳號只要有 `tk3c_price_tracker.all_goods_daily` 的 SELECT 權限，不需要 `mydb` 的權限
+- 組員重跑 `load_csv_to_mysql`（會整張重建）的期間，view 查不到 momo 的組員資料
 
 ```sql
-INSERT INTO goods_daily (平台, 抓取日期, 分類, 商品編號, 廠牌, 型號, 商品名稱, 售價, 原價,
-                         銷量, 評分, 評價數, 庫存, 促銷文案, 有政府補助, 銷量下限)
-SELECT 'momo', 抓取日期, 分類, 商品編號, 廠牌, 型號, 商品名稱, 售價, 原價,
-       銷量, 評分, 評價數, 庫存, 促銷文案, 有政府補助, 銷量下限
-FROM mydb.momo_goods_daily;
-
 -- 同型號跨平台比價
-SELECT 型號, 平台, 售價 FROM goods_daily
+SELECT 型號, 平台, 售價 FROM all_goods_daily
 WHERE 抓取日期 = CURDATE() AND 型號 IN (
-    SELECT 型號 FROM goods_daily WHERE 抓取日期 = CURDATE() GROUP BY 型號 HAVING COUNT(DISTINCT 平台) > 1
+    SELECT 型號 FROM all_goods_daily WHERE 抓取日期 = CURDATE() GROUP BY 型號 HAVING COUNT(DISTINCT 平台) > 1
 )
 ORDER BY 型號, 售價;
 ```
@@ -697,6 +702,5 @@ ORDER BY 型號, 售價;
 
 ## 未來規劃
 
-- 組員的 momo 資料匯入 `goods_daily`，Redash 加上三平台比價
-- `mydb.momo_goods_daily` 每天自動同步進 `goods_daily`（目前要手動執行 INSERT）
+- Redash / Superset 用 `all_goods_daily` 做三平台比價圖表
 - PChome 商品名稱沒有括號的型號抓取規則（目前約一半抓不到型號）
