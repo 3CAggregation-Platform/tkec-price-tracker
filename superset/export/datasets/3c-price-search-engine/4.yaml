@@ -1,0 +1,176 @@
+table_name: "\u50F9\u683C\u8B8A\u52D5\u7D71\u8A08"
+main_dttm_col: "\u9996\u6B21\u51FA\u73FE"
+description: null
+default_endpoint: null
+offset: 0
+cache_timeout: null
+catalog: null
+schema: tk3c_price_tracker
+sql: "SELECT CASE \u5E73\u53F0 WHEN 'tk3c' THEN '\u71E6\u5764' WHEN 'pchome' THEN\
+  \ 'PChome' WHEN 'yahoo' THEN 'Yahoo' ELSE 'momo' END AS \u5E73\u53F0\u540D\u7A31\
+  ,\n       \u5206\u985E, ANY_VALUE(\u578B\u865F) AS \u578B\u865F, ANY_VALUE(\u5546\
+  \u54C1\u540D\u7A31) AS \u5546\u54C1\u540D\u7A31,\n       COUNT(*) AS \u89C0\u5BDF\
+  \u5929\u6578,\n       MIN(\u6293\u53D6\u65E5\u671F) AS \u9996\u6B21\u51FA\u73FE\
+  , MAX(\u6293\u53D6\u65E5\u671F) AS \u6700\u8FD1\u51FA\u73FE,\n       SUM(\u552E\u50F9\
+  \ <> \u524D\u6B21\u552E\u50F9) AS \u8B8A\u50F9\u6B21\u6578,\n       MIN(\u552E\u50F9\
+  ) AS \u6700\u4F4E\u50F9, MAX(\u552E\u50F9) AS \u6700\u9AD8\u50F9,\n       ROUND((MAX(\u552E\
+  \u50F9) - MIN(\u552E\u50F9)) / MAX(\u552E\u50F9), 3) AS \u6CE2\u52D5\u5E45\u5EA6\
+  \nFROM (\n  SELECT \u5E73\u53F0, \u5206\u985E, \u5546\u54C1\u7DE8\u865F, \u578B\u865F\
+  , \u5546\u54C1\u540D\u7A31, \u6293\u53D6\u65E5\u671F, \u552E\u50F9,\n         LAG(\u552E\
+  \u50F9) OVER (PARTITION BY \u5E73\u53F0, \u5546\u54C1\u7DE8\u865F ORDER BY \u6293\
+  \u53D6\u65E5\u671F) AS \u524D\u6B21\u552E\u50F9\n  FROM all_goods_daily\n) h\nGROUP\
+  \ BY \u5E73\u53F0, \u5206\u985E, \u5546\u54C1\u7DE8\u865F\nHAVING COUNT(*) >= 7\n\
+  ORDER BY \u8B8A\u50F9\u6B21\u6578 DESC, \u6CE2\u52D5\u5E45\u5EA6 DESC"
+params: null
+template_params: null
+filter_select_enabled: true
+fetch_values_predicate: null
+extra: null
+normalize_columns: false
+always_filter_main_dttm: false
+uuid: 7203297e-660b-44d0-a7a6-12edbd75b875
+metrics:
+- metric_name: count
+  verbose_name: COUNT(*)
+  metric_type: count
+  expression: COUNT(*)
+  description: null
+  d3format: null
+  currency: null
+  extra: null
+  warning_text: null
+columns:
+- column_name: "\u8B8A\u50F9\u6B21\u6578"
+  verbose_name: null
+  is_dttm: false
+  is_active: true
+  type: NEWDECIMAL
+  advanced_data_type: null
+  groupby: true
+  filterable: true
+  expression: ''
+  description: null
+  python_date_format: null
+  extra: null
+- column_name: "\u6CE2\u52D5\u5E45\u5EA6"
+  verbose_name: null
+  is_dttm: false
+  is_active: true
+  type: NEWDECIMAL
+  advanced_data_type: null
+  groupby: true
+  filterable: true
+  expression: ''
+  description: null
+  python_date_format: null
+  extra: null
+- column_name: "\u6700\u8FD1\u51FA\u73FE"
+  verbose_name: null
+  is_dttm: true
+  is_active: true
+  type: DATE
+  advanced_data_type: null
+  groupby: true
+  filterable: true
+  expression: ''
+  description: null
+  python_date_format: null
+  extra: null
+- column_name: "\u9996\u6B21\u51FA\u73FE"
+  verbose_name: null
+  is_dttm: true
+  is_active: true
+  type: DATE
+  advanced_data_type: null
+  groupby: true
+  filterable: true
+  expression: ''
+  description: null
+  python_date_format: null
+  extra: null
+- column_name: "\u5E73\u53F0\u540D\u7A31"
+  verbose_name: null
+  is_dttm: false
+  is_active: true
+  type: VAR_STRING
+  advanced_data_type: null
+  groupby: true
+  filterable: true
+  expression: ''
+  description: null
+  python_date_format: null
+  extra: null
+- column_name: "\u5206\u985E"
+  verbose_name: null
+  is_dttm: false
+  is_active: true
+  type: BLOB
+  advanced_data_type: null
+  groupby: true
+  filterable: true
+  expression: ''
+  description: null
+  python_date_format: null
+  extra: null
+- column_name: "\u5546\u54C1\u540D\u7A31"
+  verbose_name: null
+  is_dttm: false
+  is_active: true
+  type: BLOB
+  advanced_data_type: null
+  groupby: true
+  filterable: true
+  expression: ''
+  description: null
+  python_date_format: null
+  extra: null
+- column_name: "\u578B\u865F"
+  verbose_name: null
+  is_dttm: false
+  is_active: true
+  type: BLOB
+  advanced_data_type: null
+  groupby: true
+  filterable: true
+  expression: ''
+  description: null
+  python_date_format: null
+  extra: null
+- column_name: "\u6700\u4F4E\u50F9"
+  verbose_name: null
+  is_dttm: false
+  is_active: true
+  type: LONGLONG
+  advanced_data_type: null
+  groupby: true
+  filterable: true
+  expression: ''
+  description: null
+  python_date_format: null
+  extra: null
+- column_name: "\u6700\u9AD8\u50F9"
+  verbose_name: null
+  is_dttm: false
+  is_active: true
+  type: LONGLONG
+  advanced_data_type: null
+  groupby: true
+  filterable: true
+  expression: ''
+  description: null
+  python_date_format: null
+  extra: null
+- column_name: "\u89C0\u5BDF\u5929\u6578"
+  verbose_name: null
+  is_dttm: false
+  is_active: true
+  type: LONGLONG
+  advanced_data_type: null
+  groupby: true
+  filterable: true
+  expression: ''
+  description: null
+  python_date_format: null
+  extra: null
+version: 1.0.0
+database_uuid: b5b2e1b7-981e-41bd-9d87-18ef5bdd2ab8

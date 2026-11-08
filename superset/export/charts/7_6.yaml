@@ -1,0 +1,85 @@
+slice_name: "\u50F9\u683C\u8B8A\u52D5\u6392\u884C\uFF08\u89C0\u5BDF 7 \u5929\u4EE5\
+  \u4E0A\uFF09"
+description: null
+certified_by: null
+certification_details: null
+viz_type: table
+params:
+  datasource: 4__table
+  viz_type: table
+  query_mode: raw
+  groupby: []
+  time_grain_sqla: P1D
+  temporal_columns_lookup:
+    "\u9996\u6B21\u51FA\u73FE": true
+    "\u6700\u8FD1\u51FA\u73FE": true
+  metrics: []
+  all_columns:
+  - "\u5E73\u53F0\u540D\u7A31"
+  - "\u5206\u985E"
+  - "\u5546\u54C1\u540D\u7A31"
+  - "\u89C0\u5BDF\u5929\u6578"
+  - "\u8B8A\u50F9\u6B21\u6578"
+  - "\u6700\u4F4E\u50F9"
+  - "\u6700\u9AD8\u50F9"
+  - "\u6CE2\u52D5\u5E45\u5EA6"
+  percent_metrics: []
+  adhoc_filters:
+  - clause: WHERE
+    subject: "\u9996\u6B21\u51FA\u73FE"
+    operator: TEMPORAL_RANGE
+    comparator: No filter
+    expressionType: SIMPLE
+  order_by_cols:
+  - '["\u8b8a\u50f9\u6b21\u6578", false]'
+  order_desc: true
+  row_limit: 50
+  server_page_length: 10
+  table_timestamp_format: smart_date
+  allow_render_html: true
+  column_config:
+    "\u6700\u4F4E\u50F9":
+      d3NumberFormat: ',d'
+    "\u6700\u9AD8\u50F9":
+      d3NumberFormat: ',d'
+    "\u6CE2\u52D5\u5E45\u5EA6":
+      d3NumberFormat: ',.1%'
+      showCellBars: true
+  show_cell_bars: false
+  color_pn: true
+  comparison_color_scheme: Green
+  conditional_formatting: []
+  comparison_type: values
+  extra_form_data: {}
+  dashboards:
+  - 1
+query_context: "{\"datasource\":{\"id\":4,\"type\":\"table\"},\"force\":false,\"queries\"\
+  :[{\"filters\":[{\"col\":\"\u9996\u6B21\u51FA\u73FE\",\"op\":\"TEMPORAL_RANGE\"\
+  ,\"val\":\"No filter\"}],\"extras\":{\"time_grain_sqla\":\"P1D\",\"having\":\"\"\
+  ,\"where\":\"\"},\"applied_time_extras\":{},\"columns\":[\"\u5E73\u53F0\u540D\u7A31\
+  \",\"\u5206\u985E\",\"\u5546\u54C1\u540D\u7A31\",\"\u89C0\u5BDF\u5929\u6578\",\"\
+  \u8B8A\u50F9\u6B21\u6578\",\"\u6700\u4F4E\u50F9\",\"\u6700\u9AD8\u50F9\",\"\u6CE2\
+  \u52D5\u5E45\u5EA6\"],\"orderby\":[[\"\u8B8A\u50F9\u6B21\u6578\",false]],\"annotation_layers\"\
+  :[],\"row_limit\":50,\"series_limit\":0,\"order_desc\":true,\"url_params\":{},\"\
+  custom_params\":{},\"custom_form_data\":{},\"post_processing\":[],\"time_offsets\"\
+  :[]}],\"form_data\":{\"datasource\":\"4__table\",\"viz_type\":\"table\",\"query_mode\"\
+  :\"raw\",\"groupby\":[],\"time_grain_sqla\":\"P1D\",\"temporal_columns_lookup\"\
+  :{\"\u9996\u6B21\u51FA\u73FE\":true,\"\u6700\u8FD1\u51FA\u73FE\":true},\"metrics\"\
+  :[],\"all_columns\":[\"\u5E73\u53F0\u540D\u7A31\",\"\u5206\u985E\",\"\u5546\u54C1\
+  \u540D\u7A31\",\"\u89C0\u5BDF\u5929\u6578\",\"\u8B8A\u50F9\u6B21\u6578\",\"\u6700\
+  \u4F4E\u50F9\",\"\u6700\u9AD8\u50F9\",\"\u6CE2\u52D5\u5E45\u5EA6\"],\"percent_metrics\"\
+  :[],\"adhoc_filters\":[{\"clause\":\"WHERE\",\"subject\":\"\u9996\u6B21\u51FA\u73FE\
+  \",\"operator\":\"TEMPORAL_RANGE\",\"comparator\":\"No filter\",\"expressionType\"\
+  :\"SIMPLE\"}],\"order_by_cols\":[\"[\\\"\\\\u8b8a\\\\u50f9\\\\u6b21\\\\u6578\\\"\
+  , false]\"],\"order_desc\":true,\"row_limit\":50,\"server_page_length\":10,\"table_timestamp_format\"\
+  :\"smart_date\",\"allow_render_html\":true,\"column_config\":{\"\u6700\u4F4E\u50F9\
+  \":{\"d3NumberFormat\":\",d\"},\"\u6700\u9AD8\u50F9\":{\"d3NumberFormat\":\",d\"\
+  },\"\u6CE2\u52D5\u5E45\u5EA6\":{\"d3NumberFormat\":\",.1%\",\"showCellBars\":true}},\"\
+  show_cell_bars\":false,\"color_pn\":true,\"comparison_color_scheme\":\"Green\",\"\
+  conditional_formatting\":[],\"comparison_type\":\"values\",\"extra_form_data\":{},\"\
+  dashboards\":[1],\"force\":false,\"result_format\":\"json\",\"result_type\":\"full\"\
+  ,\"include_time\":false},\"result_format\":\"json\",\"result_type\":\"full\"}"
+cache_timeout: null
+uuid: 99d53cfd-5b47-4a3a-a718-d3ddc8e713fa
+version: 1.0.0
+dataset_uuid: 7203297e-660b-44d0-a7a6-12edbd75b875

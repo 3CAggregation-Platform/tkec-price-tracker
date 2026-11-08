@@ -79,15 +79,40 @@ position:
     - GRID_ID
     - ROW--mnnZvaNryo-9_ZZ6loQS
     type: CHART
+  CHART-explore-6-1:
+    children: []
+    id: CHART-explore-6-1
+    meta:
+      chartId: 6
+      height: 50
+      sliceName: "\u50F9\u683C\u8B8A\u52D5\u6392\u884C\uFF08\u89C0\u5BDF 7 \u5929\u4EE5\
+        \u4E0A\uFF09"
+      uuid: 99d53cfd-5b47-4a3a-a718-d3ddc8e713fa
+      width: 6
+    parents:
+    - ROOT_ID
+    - GRID_ID
+    - ROW-M_rHHdU8B19oqLGUNer2b
+    type: CHART
+  CHART-explore-7-1:
+    children: []
+    id: CHART-explore-7-1
+    meta:
+      chartId: 7
+      height: 50
+      sliceName: "\u96D911\u50F9\u683C\u6AA2\u9A57"
+      uuid: 7d6cfdbb-5621-4cb2-855a-9363a69d5488
+      width: 6
+    parents:
+    - ROOT_ID
+    - GRID_ID
+    - ROW-M_rHHdU8B19oqLGUNer2b
+    type: CHART
   DASHBOARD_VERSION_KEY: v2
   GRID_ID:
     children:
     - ROW-Hf-aimwvl_E9soMyBw-8s
-    - ROW-pFSAcyYwAGWF9iWWZXjgK
-    - ROW-lLiYhX-v4k0gZNkbwWJfX
-    - ROW-ZwO0HBjoPVyu6U2Uf2x76
-    - ROW-gIhTUx4iUZcKNXui6dkeG
-    - ROW--mnnZvaNryo-9_ZZ6loQS
+    - TABS-KaEnXA1HgnhHSPhSh_au8
     id: GRID_ID
     parents:
     - ROOT_ID
@@ -118,16 +143,16 @@ position:
     - GRID_ID
     id: ROOT_ID
     type: ROOT
-  ROW--mnnZvaNryo-9_ZZ6loQS:
+  ROW-0Sk3To0HPUCoL2ycMf2kv:
     children:
     - CHART-explore-5-1
-    id: ROW--mnnZvaNryo-9_ZZ6loQS
+    id: ROW-0Sk3To0HPUCoL2ycMf2kv
     meta:
-      '0': ROOT_ID
       background: BACKGROUND_TRANSPARENT
     parents:
     - ROOT_ID
     - GRID_ID
+    - TAB-hBUIFraBC9Q8i7OyJrvDR
     type: ROW
   ROW-Hf-aimwvl_E9soMyBw-8s:
     children:
@@ -139,50 +164,80 @@ position:
     - ROOT_ID
     - GRID_ID
     type: ROW
-  ROW-ZwO0HBjoPVyu6U2Uf2x76:
+  ROW-Ofv9kwIAXD-tdOFWZnoDk:
     children:
-    - CHART-explore-3-1
-    id: ROW-ZwO0HBjoPVyu6U2Uf2x76
+    - CHART-explore-6-1
+    - CHART-explore-7-1
+    id: ROW-Ofv9kwIAXD-tdOFWZnoDk
     meta:
-      '0': ROOT_ID
       background: BACKGROUND_TRANSPARENT
     parents:
     - ROOT_ID
     - GRID_ID
+    - TABS-KaEnXA1HgnhHSPhSh_au8
+    - TAB-Si2ce1Tnv425HhgMyH9VL
     type: ROW
-  ROW-gIhTUx4iUZcKNXui6dkeG:
-    children:
-    - CHART-explore-4-1
-    id: ROW-gIhTUx4iUZcKNXui6dkeG
-    meta:
-      '0': ROOT_ID
-      background: BACKGROUND_TRANSPARENT
-    parents:
-    - ROOT_ID
-    - GRID_ID
-    type: ROW
-  ROW-lLiYhX-v4k0gZNkbwWJfX:
-    children:
-    - CHART-explore-2-1
-    id: ROW-lLiYhX-v4k0gZNkbwWJfX
-    meta:
-      '0': ROOT_ID
-      background: BACKGROUND_TRANSPARENT
-    parents:
-    - ROOT_ID
-    - GRID_ID
-    type: ROW
-  ROW-pFSAcyYwAGWF9iWWZXjgK:
+  ROW-kW704vHGrLj3klk7-xle7:
     children:
     - CHART-explore-1-1
-    id: ROW-pFSAcyYwAGWF9iWWZXjgK
+    - CHART-explore-2-1
+    id: ROW-kW704vHGrLj3klk7-xle7
     meta:
-      '0': ROOT_ID
       background: BACKGROUND_TRANSPARENT
     parents:
     - ROOT_ID
     - GRID_ID
+    - TAB-hBUIFraBC9Q8i7OyJrvDR
     type: ROW
+  ROW-pB4_SFVfxHf1ke1QUHCmN:
+    children:
+    - CHART-explore-3-1
+    - CHART-explore-4-1
+    id: ROW-pB4_SFVfxHf1ke1QUHCmN
+    meta:
+      background: BACKGROUND_TRANSPARENT
+    parents:
+    - ROOT_ID
+    - GRID_ID
+    - TAB-hBUIFraBC9Q8i7OyJrvDR
+    type: ROW
+  TAB-Si2ce1Tnv425HhgMyH9VL:
+    children:
+    - ROW-Ofv9kwIAXD-tdOFWZnoDk
+    id: TAB-Si2ce1Tnv425HhgMyH9VL
+    meta:
+      defaultText: Tab title
+      placeholder: Tab title
+      text: "\u9577\u671F\u5206\u6790"
+    parents:
+    - ROOT_ID
+    - GRID_ID
+    - TABS-KaEnXA1HgnhHSPhSh_au8
+    type: TAB
+  TAB-hBUIFraBC9Q8i7OyJrvDR:
+    children:
+    - ROW-kW704vHGrLj3klk7-xle7
+    - ROW-pB4_SFVfxHf1ke1QUHCmN
+    - ROW-0Sk3To0HPUCoL2ycMf2kv
+    id: TAB-hBUIFraBC9Q8i7OyJrvDR
+    meta:
+      defaultText: Tab title
+      placeholder: Tab title
+      text: "\u6BCF\u65E5\u6BD4\u50F9"
+    parents:
+    - ROOT_ID
+    - GRID_ID
+    type: TAB
+  TABS-KaEnXA1HgnhHSPhSh_au8:
+    children:
+    - TAB-hBUIFraBC9Q8i7OyJrvDR
+    - TAB-Si2ce1Tnv425HhgMyH9VL
+    id: TABS-KaEnXA1HgnhHSPhSh_au8
+    meta: {}
+    parents:
+    - ROOT_ID
+    - GRID_ID
+    type: TABS
 metadata:
   label_colors:
     "\u71E6\u5764": '#D2621A'
@@ -199,6 +254,8 @@ metadata:
         - 3
         - 4
         - 5
+        - 6
+        - 7
     '2':
       id: 2
       crossFilters:
@@ -208,6 +265,8 @@ metadata:
         - 3
         - 4
         - 5
+        - 6
+        - 7
     '3':
       id: 3
       crossFilters:
@@ -217,6 +276,8 @@ metadata:
         - 2
         - 4
         - 5
+        - 6
+        - 7
     '4':
       id: 4
       crossFilters:
@@ -226,6 +287,8 @@ metadata:
         - 2
         - 3
         - 5
+        - 6
+        - 7
     '5':
       id: 5
       crossFilters:
@@ -235,6 +298,30 @@ metadata:
         - 2
         - 3
         - 4
+        - 6
+        - 7
+    '6':
+      id: 6
+      crossFilters:
+        scope: global
+        chartsInScope:
+        - 1
+        - 2
+        - 3
+        - 4
+        - 5
+        - 7
+    '7':
+      id: 7
+      crossFilters:
+        scope: global
+        chartsInScope:
+        - 1
+        - 2
+        - 3
+        - 4
+        - 5
+        - 6
   global_chart_configuration:
     scope:
       rootPath:
@@ -246,6 +333,8 @@ metadata:
     - 3
     - 4
     - 5
+    - 6
+    - 7
   color_scheme: ''
   refresh_frequency: 0
   color_scheme_domain: []
@@ -261,6 +350,11 @@ metadata:
   default_filters: '{}'
   native_filter_configuration:
   - cascadeParentIds: []
+    chartsInScope:
+    - 1
+    - 2
+    - 3
+    - 4
     controlValues:
       defaultToFirstItem: false
       enableEmptyFilter: true
@@ -288,41 +382,53 @@ metadata:
       excluded: []
       rootPath:
       - ROOT_ID
+    tabsInScope: []
     targets:
     - column:
         name: "\u5206\u985E"
       datasetUuid: f0bd2785-a100-4018-be16-a981515cef77
     type: NATIVE_FILTER
-    chartsInScope:
-    - 1
-    - 2
-    - 3
-    - 4
-    tabsInScope: []
-  - id: NATIVE_FILTER-tUXKcA5yIMy2aXvuKcEsC
+  - cascadeParentIds:
+    - NATIVE_FILTER-tvmsHMDXhF1-8sAWNf8by
     controlValues:
-      enableEmptyFilter: true
       defaultToFirstItem: false
+      enableEmptyFilter: true
+      inverseSelection: false
       multiSelect: false
       searchAllOptions: false
-      inverseSelection: false
-    name: "\u578B\u865F"
+    defaultDataMask:
+      extraFormData:
+        filters:
+        - col: "\u578B\u865F"
+          op: IN
+          val:
+          - AF-6071W
+      filterState:
+        label: AF-6071W
+        validateMessage: false
+        validateStatus: false
+        value:
+        - AF-6071W
+    description: ''
     filterType: filter_select
-    targets:
-    - column:
-        name: "\u578B\u865F"
-      datasetUuid: f0bd2785-a100-4018-be16-a981515cef77
-    defaultDataMask: AF-6071W
-    cascadeParentIds:
-    - NATIVE_FILTER-tvmsHMDXhF1-8sAWNf8by
+    id: NATIVE_FILTER-tUXKcA5yIMy2aXvuKcEsC
+    name: "\u578B\u865F"
     scope:
       excluded:
       - 1
       - 2
       - 3
       - 5
+      - 6
+      - 7
       rootPath:
       - ROOT_ID
+    targets:
+    - column:
+        name: "\u578B\u865F"
+      datasetUuid: f0bd2785-a100-4018-be16-a981515cef77
     type: NATIVE_FILTER
-    description: ''
+    chartsInScope:
+    - 4
+    tabsInScope: []
 version: 1.0.0

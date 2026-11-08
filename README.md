@@ -537,7 +537,9 @@ mysql+pymysql://superset_reader:<SUPERSET_DB_PASSWORD>@tk3c_mysql:3306/tk3c_pric
 
 ### Dashboard 備份與還原
 
-圖表、dataset、dashboard 的設定存在 volume 的 SQLite，另外匯出成 YAML 放在 `superset/export/` 進 git（資料庫密碼會被遮成 `XXXXXXXXXX`）。目前內容：dashboard「家電比價」（分類、型號篩選器）與 5 張圖（四平台平均售價走勢、同型號跨平台比價、售價分布箱形圖、單一型號各平台價格、降價排行）。
+圖表、dataset、dashboard 的設定存在 volume 的 SQLite，另外匯出成 YAML 放在 `superset/export/` 進 git（資料庫密碼會被遮成 `XXXXXXXXXX`）。目前內容：dashboard「家電比價」（分類、型號篩選器；型號只作用在「單一型號各平台價格」）與 7 張圖：
+  - 「每日比價」分頁：四平台平均售價走勢、同型號跨平台比價（最新一天）、四平台售價分布（近 7 天，箱形圖）、單一型號各平台價格、降價排行（最近一次 vs 上一次）
+  - 「長期分析」分頁：價格變動排行（觀察 7 天以上）、雙11價格檢驗（11/11 售價 vs 前 30 天，含「雙11前先漲價」判斷）
 
 ```bash
 # 匯出（VM 上）：改完 dashboard 後執行，再把 zip 解開覆蓋 superset/export/ 並 commit

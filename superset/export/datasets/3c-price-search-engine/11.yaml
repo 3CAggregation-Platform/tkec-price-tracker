@@ -1,0 +1,55 @@
+table_name: "\u96D911\u50F9\u683C\u6AA2\u9A57"
+main_dttm_col: null
+description: null
+default_endpoint: null
+offset: 0
+cache_timeout: null
+catalog: null
+schema: tk3c_price_tracker
+sql: "SELECT CASE p.\u5E73\u53F0 WHEN 'tk3c' THEN '\u71E6\u5764' WHEN 'pchome' THEN\
+  \ 'PChome' WHEN 'yahoo' THEN 'Yahoo' ELSE 'momo' END AS \u5E73\u53F0\u540D\u7A31\
+  ,\n       p.\u5206\u985E, ANY_VALUE(p.\u578B\u865F) AS \u578B\u865F, ANY_VALUE(p.\u5546\
+  \u54C1\u540D\u7A31) AS \u5546\u54C1\u540D\u7A31,\n       COUNT(*) AS \u524D30\u5929\
+  \u89C0\u5BDF\u5929\u6578,\n       ROUND(AVG(p.\u552E\u50F9)) AS \u524D30\u5929\u5E73\
+  \u5747,\n       MIN(p.\u552E\u50F9) AS \u524D30\u5929\u6700\u4F4E,\n       MAX(CASE\
+  \ WHEN p.\u6293\u53D6\u65E5\u671F >= DATE_SUB(d.\u552E\u50F9\u65E5, INTERVAL 10\
+  \ DAY) THEN p.\u552E\u50F9 END) AS \u524D10\u5929\u6700\u9AD8,\n       ANY_VALUE(d.\u552E\
+  \u50F9) AS \u96D911\u552E\u50F9,\n       ANY_VALUE(d.\u552E\u50F9) - MIN(p.\u552E\
+  \u50F9) AS \u6BD4\u524D30\u5929\u6700\u4F4E,\n       CASE\n         WHEN ANY_VALUE(d.\u552E\
+  \u50F9) < MIN(p.\u552E\u50F9) THEN '\u6BD4\u524D30\u5929\u90FD\u4FBF\u5B9C'\n  \
+  \       WHEN ANY_VALUE(d.\u552E\u50F9) = MIN(p.\u552E\u50F9) THEN '\u548C\u524D\
+  30\u5929\u6700\u4F4E\u50F9\u76F8\u540C'\n         ELSE '\u6C92\u6709\u6BD4\u8F03\
+  \u4FBF\u5B9C'\n       END AS \u5224\u65B7,\n       CASE WHEN MAX(CASE WHEN p.\u6293\
+  \u53D6\u65E5\u671F >= DATE_SUB(d.\u552E\u50F9\u65E5, INTERVAL 10 DAY) THEN p.\u552E\
+  \u50F9 END)\n                 > AVG(CASE WHEN p.\u6293\u53D6\u65E5\u671F < DATE_SUB(d.\u552E\
+  \u50F9\u65E5, INTERVAL 10 DAY) THEN p.\u552E\u50F9 END) * 1.05\n            THEN\
+  \ '\u662F' ELSE '\u5426' END AS \u96D911\u524D\u5148\u6F32\u50F9\nFROM (SELECT \u5E73\
+  \u53F0, \u5206\u985E, \u5546\u54C1\u7DE8\u865F, \u552E\u50F9, \u6293\u53D6\u65E5\
+  \u671F AS \u552E\u50F9\u65E5 FROM all_goods_daily WHERE \u6293\u53D6\u65E5\u671F\
+  \ = '2026-11-11') d\nJOIN all_goods_daily p\n  ON p.\u5E73\u53F0 = d.\u5E73\u53F0\
+  \ AND p.\u5546\u54C1\u7DE8\u865F = d.\u5546\u54C1\u7DE8\u865F\n AND p.\u6293\u53D6\
+  \u65E5\u671F >= DATE_SUB(d.\u552E\u50F9\u65E5, INTERVAL 30 DAY) AND p.\u6293\u53D6\
+  \u65E5\u671F < d.\u552E\u50F9\u65E5\nGROUP BY p.\u5E73\u53F0, p.\u5206\u985E, p.\u5546\
+  \u54C1\u7DE8\u865F\nHAVING COUNT(*) >= 7\nORDER BY \u6BD4\u524D30\u5929\u6700\u4F4E"
+params: null
+template_params: null
+filter_select_enabled: true
+fetch_values_predicate: null
+extra: null
+normalize_columns: false
+always_filter_main_dttm: false
+uuid: 08dca8ec-7aae-4a74-ab6e-5b7f1bc8dbc1
+metrics:
+- metric_name: count
+  verbose_name: COUNT(*)
+  metric_type: count
+  expression: COUNT(*)
+  description: null
+  d3format: null
+  currency: null
+  extra:
+    warning_markdown: ''
+  warning_text: null
+columns: []
+version: 1.0.0
+database_uuid: b5b2e1b7-981e-41bd-9d87-18ef5bdd2ab8
