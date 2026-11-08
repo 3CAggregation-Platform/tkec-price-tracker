@@ -72,7 +72,8 @@ tk3c-price-tracker/
 ├── superset/
 │   ├── Dockerfile                 # 官方 Superset 5.0 image 加裝 MySQL driver（pymysql）
 │   ├── superset_config.py         # SECRET_KEY、SQLite metadata、繁體中文介面
-│   └── docker-compose-superset.yml # Superset swarm stack（port 8088）
+│   ├── docker-compose-superset.yml # Superset swarm stack（port 8088）
+│   └── export/                    # 匯出的 dashboard、圖表、dataset 設定（YAML）
 ├── redash/
 │   ├── queries/                   # 儀表板 6 個查詢的 SQL
 │   └── setup_redash.py            # 透過 Redash API 建立資料來源、查詢、圖表與儀表板
@@ -533,6 +534,24 @@ mysql+pymysql://superset_reader:<SUPERSET_DB_PASSWORD>@tk3c_mysql:3306/tk3c_pric
 ```
 
 `charset=utf8mb4` 一定要加，否則中文欄位和商品名稱會變亂碼。
+
+### Dashboard 備份與還原
+
+圖表、dataset、dashboard 的設定存在 volume 的 SQLite，另外匯出成 YAML 放在 `superset/export/` 進 git（資料庫密碼會被遮成 `XXXXXXXXXX`）。目前內容：dashboard「家電比價」（分類、型號篩選器）與 5 張圖（四平台平均售價走勢、同型號跨平台比價、售價分布箱形圖、單一型號各平台價格、降價排行）。
+
+```bash
+# 匯出（VM 上）：改完 dashboard 後執行，再把 zip 解開覆蓋 superset/export/ 並 commit
+C=$(docker ps -q -f name=superset_superset)
+docker exec $C superset export-dashboards -f /tmp/dashboards.zip
+docker cp $C:/tmp/dashboards.zip ~/dashboards.zip && docker exec $C rm /tmp/dashboards.zip
+
+# 還原（新的 Superset，已完成上方第一次部署）：把 superset/export/ 打包成 zip 匯入
+cd superset/export && zip -r /tmp/dashboards.zip . && cd -
+docker cp /tmp/dashboards.zip $C:/tmp/dashboards.zip
+docker exec $C superset import-dashboards -p /tmp/dashboards.zip -u admin
+```
+
+匯入後到「Settings → Database Connections」編輯連線，把 URI 裡的 `XXXXXXXXXX` 換回 `SUPERSET_DB_PASSWORD`。
 
 ## Redash 視覺化
 

@@ -1,0 +1,99 @@
+slice_name: "\u540C\u578B\u865F\u8DE8\u5E73\u53F0\u6BD4\u50F9\uFF08\u6700\u65B0\u4E00\
+  \u5929\uFF09"
+description: null
+certified_by: null
+certification_details: null
+viz_type: table
+params:
+  datasource: 2__table
+  viz_type: table
+  query_mode: raw
+  groupby: []
+  time_grain_sqla: P1D
+  temporal_columns_lookup:
+    "\u6293\u53D6\u65E5\u671F": true
+  all_columns:
+  - "\u5206\u985E"
+  - "\u578B\u865F"
+  - "\u71E6\u5764"
+  - PChome
+  - Yahoo
+  - momo
+  - "\u6700\u4FBF\u5B9C\u5E73\u53F0"
+  - "\u50F9\u5DEE"
+  percent_metrics: []
+  adhoc_filters:
+  - expressionType: SIMPLE
+    subject: "\u662F\u5426\u6700\u65B0"
+    operator: ==
+    operatorId: EQUALS
+    comparator: '1'
+    clause: WHERE
+    sqlExpression: null
+    isExtra: false
+    isNew: false
+    datasourceWarning: false
+    filterOptionName: filter_3vctwei6fx_eqz2cdg2h5f
+  - clause: WHERE
+    subject: "\u6293\u53D6\u65E5\u671F"
+    operator: TEMPORAL_RANGE
+    comparator: No filter
+    expressionType: SIMPLE
+  order_by_cols:
+  - '["\u50f9\u5dee", false]'
+  order_desc: true
+  row_limit: 1000
+  server_page_length: 10
+  table_timestamp_format: smart_date
+  allow_render_html: true
+  column_config:
+    "\u50F9\u5DEE":
+      showCellBars: true
+    "\u71E6\u5764":
+      d3NumberFormat: ',d'
+    PChome:
+      d3NumberFormat: ',d'
+    Yahoo:
+      d3NumberFormat: ',d'
+    momo:
+      d3NumberFormat: ',d'
+  show_cell_bars: false
+  color_pn: true
+  comparison_color_scheme: Green
+  conditional_formatting: []
+  comparison_type: values
+  extra_form_data: {}
+  dashboards:
+  - 1
+query_context: "{\"datasource\":{\"id\":2,\"type\":\"table\"},\"force\":false,\"queries\"\
+  :[{\"filters\":[{\"col\":\"\u662F\u5426\u6700\u65B0\",\"op\":\"==\",\"val\":\"1\"\
+  },{\"col\":\"\u6293\u53D6\u65E5\u671F\",\"op\":\"TEMPORAL_RANGE\",\"val\":\"No filter\"\
+  }],\"extras\":{\"time_grain_sqla\":\"P1D\",\"having\":\"\",\"where\":\"\"},\"applied_time_extras\"\
+  :{},\"columns\":[\"\u5206\u985E\",\"\u578B\u865F\",\"\u71E6\u5764\",\"PChome\",\"\
+  Yahoo\",\"momo\",\"\u6700\u4FBF\u5B9C\u5E73\u53F0\",\"\u50F9\u5DEE\"],\"orderby\"\
+  :[[\"\u50F9\u5DEE\",false]],\"annotation_layers\":[],\"row_limit\":1000,\"series_limit\"\
+  :0,\"order_desc\":true,\"url_params\":{},\"custom_params\":{},\"custom_form_data\"\
+  :{},\"post_processing\":[],\"time_offsets\":[]}],\"form_data\":{\"datasource\":\"\
+  2__table\",\"viz_type\":\"table\",\"query_mode\":\"raw\",\"groupby\":[],\"time_grain_sqla\"\
+  :\"P1D\",\"temporal_columns_lookup\":{\"\u6293\u53D6\u65E5\u671F\":true},\"all_columns\"\
+  :[\"\u5206\u985E\",\"\u578B\u865F\",\"\u71E6\u5764\",\"PChome\",\"Yahoo\",\"momo\"\
+  ,\"\u6700\u4FBF\u5B9C\u5E73\u53F0\",\"\u50F9\u5DEE\"],\"percent_metrics\":[],\"\
+  adhoc_filters\":[{\"expressionType\":\"SIMPLE\",\"subject\":\"\u662F\u5426\u6700\
+  \u65B0\",\"operator\":\"==\",\"operatorId\":\"EQUALS\",\"comparator\":\"1\",\"clause\"\
+  :\"WHERE\",\"sqlExpression\":null,\"isExtra\":false,\"isNew\":false,\"datasourceWarning\"\
+  :false,\"filterOptionName\":\"filter_3vctwei6fx_eqz2cdg2h5f\"},{\"clause\":\"WHERE\"\
+  ,\"subject\":\"\u6293\u53D6\u65E5\u671F\",\"operator\":\"TEMPORAL_RANGE\",\"comparator\"\
+  :\"No filter\",\"expressionType\":\"SIMPLE\"}],\"order_by_cols\":[\"[\\\"\\\\u50f9\\\
+  \\u5dee\\\", false]\"],\"order_desc\":true,\"row_limit\":1000,\"server_page_length\"\
+  :10,\"table_timestamp_format\":\"smart_date\",\"allow_render_html\":true,\"column_config\"\
+  :{\"\u50F9\u5DEE\":{\"showCellBars\":true},\"\u71E6\u5764\":{\"d3NumberFormat\"\
+  :\",d\"},\"PChome\":{\"d3NumberFormat\":\",d\"},\"Yahoo\":{\"d3NumberFormat\":\"\
+  ,d\"},\"momo\":{\"d3NumberFormat\":\",d\"}},\"show_cell_bars\":false,\"color_pn\"\
+  :true,\"comparison_color_scheme\":\"Green\",\"conditional_formatting\":[],\"comparison_type\"\
+  :\"values\",\"extra_form_data\":{},\"dashboards\":[1],\"force\":false,\"result_format\"\
+  :\"json\",\"result_type\":\"full\",\"include_time\":false},\"result_format\":\"\
+  json\",\"result_type\":\"full\"}"
+cache_timeout: null
+uuid: 95a6feab-5664-438c-a8d7-d215c1d22f0c
+version: 1.0.0
+dataset_uuid: 42720e65-6008-4902-bcc1-81dadc4f3949

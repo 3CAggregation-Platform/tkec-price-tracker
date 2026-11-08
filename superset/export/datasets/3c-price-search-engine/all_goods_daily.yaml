@@ -1,0 +1,279 @@
+table_name: all_goods_daily
+main_dttm_col: "\u6293\u53D6\u65E5\u671F"
+description: null
+default_endpoint: null
+offset: 0
+cache_timeout: null
+catalog: null
+schema: tk3c_price_tracker
+sql: ''
+params: null
+template_params: null
+filter_select_enabled: true
+fetch_values_predicate: null
+extra: null
+normalize_columns: false
+always_filter_main_dttm: false
+uuid: f0bd2785-a100-4018-be16-a981515cef77
+metrics:
+- metric_name: count
+  verbose_name: COUNT(*)
+  metric_type: count
+  expression: COUNT(*)
+  description: null
+  d3format: null
+  currency: null
+  extra:
+    warning_markdown: ''
+  warning_text: null
+columns:
+- column_name: "\u5E73\u53F0\u540D\u7A31"
+  verbose_name: null
+  is_dttm: false
+  is_active: true
+  type: STRING
+  advanced_data_type: null
+  groupby: true
+  filterable: true
+  expression: "CASE \u5E73\u53F0 WHEN 'tk3c' THEN '\u71E6\u5764' WHEN 'pchome' THEN\
+    \ 'PChome' WHEN 'yahoo' THEN 'Yahoo' WHEN 'momo' THEN 'momo' END\n"
+  description: null
+  python_date_format: null
+  extra:
+    warning_markdown: null
+- column_name: "\u8A55\u5206"
+  verbose_name: null
+  is_dttm: false
+  is_active: true
+  type: DECIMAL(2, 1)
+  advanced_data_type: null
+  groupby: true
+  filterable: true
+  expression: null
+  description: null
+  python_date_format: null
+  extra:
+    warning_markdown: null
+- column_name: "\u5E73\u53F0"
+  verbose_name: null
+  is_dttm: false
+  is_active: true
+  type: VARCHAR(20)
+  advanced_data_type: null
+  groupby: true
+  filterable: true
+  expression: null
+  description: null
+  python_date_format: null
+  extra:
+    warning_markdown: null
+- column_name: "\u6293\u53D6\u65E5\u671F"
+  verbose_name: null
+  is_dttm: true
+  is_active: true
+  type: DATE
+  advanced_data_type: null
+  groupby: true
+  filterable: true
+  expression: null
+  description: null
+  python_date_format: null
+  extra:
+    warning_markdown: null
+- column_name: "\u92B7\u91CF\u4E0B\u9650"
+  verbose_name: null
+  is_dttm: false
+  is_active: true
+  type: BIGINT
+  advanced_data_type: null
+  groupby: true
+  filterable: true
+  expression: null
+  description: null
+  python_date_format: null
+  extra:
+    warning_markdown: null
+- column_name: "\u539F\u50F9"
+  verbose_name: null
+  is_dttm: false
+  is_active: true
+  type: BIGINT
+  advanced_data_type: null
+  groupby: true
+  filterable: true
+  expression: null
+  description: null
+  python_date_format: null
+  extra:
+    warning_markdown: null
+- column_name: "\u552E\u50F9"
+  verbose_name: null
+  is_dttm: false
+  is_active: true
+  type: BIGINT
+  advanced_data_type: null
+  groupby: true
+  filterable: true
+  expression: null
+  description: null
+  python_date_format: null
+  extra:
+    warning_markdown: null
+- column_name: "\u8A55\u50F9\u6578"
+  verbose_name: null
+  is_dttm: false
+  is_active: true
+  type: BIGINT
+  advanced_data_type: null
+  groupby: true
+  filterable: true
+  expression: null
+  description: null
+  python_date_format: null
+  extra:
+    warning_markdown: null
+- column_name: "\u5EAB\u5B58"
+  verbose_name: null
+  is_dttm: false
+  is_active: true
+  type: BIGINT
+  advanced_data_type: null
+  groupby: true
+  filterable: true
+  expression: null
+  description: null
+  python_date_format: null
+  extra:
+    warning_markdown: null
+- column_name: "\u4FC3\u92B7\u6587\u6848"
+  verbose_name: null
+  is_dttm: false
+  is_active: true
+  type: MEDIUMTEXT
+  advanced_data_type: null
+  groupby: true
+  filterable: true
+  expression: null
+  description: null
+  python_date_format: null
+  extra:
+    warning_markdown: null
+- column_name: "\u5206\u985E"
+  verbose_name: null
+  is_dttm: false
+  is_active: true
+  type: MEDIUMTEXT
+  advanced_data_type: null
+  groupby: true
+  filterable: true
+  expression: null
+  description: null
+  python_date_format: null
+  extra:
+    warning_markdown: null
+- column_name: "\u5546\u54C1\u540D\u7A31"
+  verbose_name: null
+  is_dttm: false
+  is_active: true
+  type: MEDIUMTEXT
+  advanced_data_type: null
+  groupby: true
+  filterable: true
+  expression: null
+  description: null
+  python_date_format: null
+  extra:
+    warning_markdown: null
+- column_name: "\u5546\u54C1\u7DE8\u865F"
+  verbose_name: null
+  is_dttm: false
+  is_active: true
+  type: MEDIUMTEXT
+  advanced_data_type: null
+  groupby: true
+  filterable: true
+  expression: null
+  description: null
+  python_date_format: null
+  extra:
+    warning_markdown: null
+- column_name: "\u578B\u865F"
+  verbose_name: null
+  is_dttm: false
+  is_active: true
+  type: MEDIUMTEXT
+  advanced_data_type: null
+  groupby: true
+  filterable: true
+  expression: null
+  description: null
+  python_date_format: null
+  extra:
+    warning_markdown: null
+- column_name: "\u5EE0\u724C"
+  verbose_name: null
+  is_dttm: false
+  is_active: true
+  type: MEDIUMTEXT
+  advanced_data_type: null
+  groupby: true
+  filterable: true
+  expression: null
+  description: null
+  python_date_format: null
+  extra:
+    warning_markdown: null
+- column_name: "\u9023\u7D50"
+  verbose_name: null
+  is_dttm: false
+  is_active: true
+  type: MEDIUMTEXT
+  advanced_data_type: null
+  groupby: true
+  filterable: true
+  expression: null
+  description: null
+  python_date_format: null
+  extra:
+    warning_markdown: null
+- column_name: "\u92B7\u91CF"
+  verbose_name: null
+  is_dttm: false
+  is_active: true
+  type: MEDIUMTEXT
+  advanced_data_type: null
+  groupby: true
+  filterable: true
+  expression: null
+  description: null
+  python_date_format: null
+  extra:
+    warning_markdown: null
+- column_name: "\u6392\u540D"
+  verbose_name: null
+  is_dttm: false
+  is_active: true
+  type: INTEGER
+  advanced_data_type: null
+  groupby: true
+  filterable: true
+  expression: null
+  description: null
+  python_date_format: null
+  extra:
+    warning_markdown: null
+- column_name: "\u6709\u653F\u5E9C\u88DC\u52A9"
+  verbose_name: null
+  is_dttm: false
+  is_active: true
+  type: TINYINT
+  advanced_data_type: null
+  groupby: true
+  filterable: true
+  expression: null
+  description: null
+  python_date_format: null
+  extra:
+    warning_markdown: null
+version: 1.0.0
+database_uuid: b5b2e1b7-981e-41bd-9d87-18ef5bdd2ab8

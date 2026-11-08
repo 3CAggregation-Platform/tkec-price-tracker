@@ -1,0 +1,14 @@
+database_name: ' 3c-price-search-engine'
+sqlalchemy_uri: mysql+pymysql://superset_reader:XXXXXXXXXX@tk3c_mysql:3306/tk3c_price_tracker?charset=utf8mb4
+cache_timeout: null
+expose_in_sqllab: true
+allow_run_async: false
+allow_ctas: false
+allow_cvas: false
+allow_dml: false
+allow_file_upload: false
+extra:
+  allows_virtual_table_explore: true
+impersonate_user: false
+uuid: b5b2e1b7-981e-41bd-9d87-18ef5bdd2ab8
+version: 1.0.0

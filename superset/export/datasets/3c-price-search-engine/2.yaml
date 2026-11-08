@@ -1,0 +1,191 @@
+table_name: "\u540C\u578B\u865F\u8DE8\u5E73\u53F0\u6BD4\u50F9"
+main_dttm_col: "\u6293\u53D6\u65E5\u671F"
+description: null
+default_endpoint: null
+offset: 0
+cache_timeout: null
+catalog: null
+schema: tk3c_price_tracker
+sql: "SELECT t.*,\n      CASE WHEN t.\u6293\u53D6\u65E5\u671F = (SELECT MAX(\u6293\
+  \u53D6\u65E5\u671F) FROM all_goods_daily WHERE \u5E73\u53F0 = 'tk3c') THEN 1 ELSE\
+  \ 0 END AS \u662F\u5426\u6700\u65B0,\n       CASE \n         WHEN t.\u50F9\u5DEE\
+  \ = 0 THEN '\u540C\u50F9'\n         WHEN t.\u71E6\u5764 THEN '\u71E6\u5764'\n  \
+  \       WHEN t.PChome THEN 'PChome'\n         WHEN t.Yahoo THEN 'Yahoo'\n      \
+  \   WHEN t.momo THEN 'momo'\n       END AS \u6700\u4FBF\u5B9C\u5E73\u53F0\nFROM\
+  \ (\n  SELECT \u6293\u53D6\u65E5\u671F, \u5206\u985E, \u578B\u865F,\n         MIN(CASE\
+  \ WHEN \u5E73\u53F0 = 'tk3c'   THEN \u552E\u50F9 END) AS \u71E6\u5764,\n       \
+  \  MIN(CASE WHEN \u5E73\u53F0 = 'pchome' THEN \u552E\u50F9 END) AS PChome,\n   \
+  \      MIN(CASE WHEN \u5E73\u53F0 = 'yahoo'  THEN \u552E\u50F9 END) AS Yahoo,\n\
+  \         MIN(CASE WHEN \u5E73\u53F0 = 'momo'   THEN \u552E\u50F9 END) AS momo,\n\
+  \         MIN(\u552E\u50F9) AS \u6700\u4F4E\u50F9,\n         MAX(\u552E\u50F9) -\
+  \ MIN(\u552E\u50F9) AS \u50F9\u5DEE,\n         COUNT(DISTINCT \u5E73\u53F0) AS \u5E73\
+  \u53F0\u6578\n  FROM all_goods_daily\n  WHERE \u578B\u865F IS NOT NULL AND \u578B\
+  \u865F <> ''\n  GROUP BY \u6293\u53D6\u65E5\u671F, \u5206\u985E, \u578B\u865F\n\
+  \  HAVING COUNT(DISTINCT \u5E73\u53F0) >= 2\n) t\nORDER BY t.\u6293\u53D6\u65E5\u671F\
+  \ DESC, t.\u50F9\u5DEE DESC"
+params: null
+template_params: null
+filter_select_enabled: true
+fetch_values_predicate: null
+extra: null
+normalize_columns: false
+always_filter_main_dttm: false
+uuid: 42720e65-6008-4902-bcc1-81dadc4f3949
+metrics:
+- metric_name: count
+  verbose_name: COUNT(*)
+  metric_type: count
+  expression: COUNT(*)
+  description: null
+  d3format: null
+  currency: null
+  extra:
+    warning_markdown: ''
+  warning_text: null
+columns:
+- column_name: "\u6293\u53D6\u65E5\u671F"
+  verbose_name: null
+  is_dttm: true
+  is_active: true
+  type: DATE
+  advanced_data_type: null
+  groupby: true
+  filterable: true
+  expression: null
+  description: null
+  python_date_format: null
+  extra: {}
+- column_name: "\u6700\u4FBF\u5B9C\u5E73\u53F0"
+  verbose_name: null
+  is_dttm: false
+  is_active: true
+  type: VAR_STRING
+  advanced_data_type: null
+  groupby: true
+  filterable: true
+  expression: null
+  description: null
+  python_date_format: null
+  extra: {}
+- column_name: "\u5206\u985E"
+  verbose_name: null
+  is_dttm: false
+  is_active: true
+  type: BLOB
+  advanced_data_type: null
+  groupby: true
+  filterable: true
+  expression: null
+  description: null
+  python_date_format: null
+  extra: {}
+- column_name: "\u578B\u865F"
+  verbose_name: null
+  is_dttm: false
+  is_active: true
+  type: BLOB
+  advanced_data_type: null
+  groupby: true
+  filterable: true
+  expression: null
+  description: null
+  python_date_format: null
+  extra: {}
+- column_name: PChome
+  verbose_name: null
+  is_dttm: false
+  is_active: true
+  type: LONGLONG
+  advanced_data_type: null
+  groupby: true
+  filterable: true
+  expression: null
+  description: null
+  python_date_format: null
+  extra: {}
+- column_name: Yahoo
+  verbose_name: null
+  is_dttm: false
+  is_active: true
+  type: LONGLONG
+  advanced_data_type: null
+  groupby: true
+  filterable: true
+  expression: null
+  description: null
+  python_date_format: null
+  extra: {}
+- column_name: momo
+  verbose_name: null
+  is_dttm: false
+  is_active: true
+  type: LONGLONG
+  advanced_data_type: null
+  groupby: true
+  filterable: true
+  expression: null
+  description: null
+  python_date_format: null
+  extra: {}
+- column_name: "\u6700\u4F4E\u50F9"
+  verbose_name: null
+  is_dttm: false
+  is_active: true
+  type: LONGLONG
+  advanced_data_type: null
+  groupby: true
+  filterable: true
+  expression: null
+  description: null
+  python_date_format: null
+  extra: {}
+- column_name: "\u50F9\u5DEE"
+  verbose_name: null
+  is_dttm: false
+  is_active: true
+  type: LONGLONG
+  advanced_data_type: null
+  groupby: true
+  filterable: true
+  expression: null
+  description: null
+  python_date_format: null
+  extra: {}
+- column_name: "\u5E73\u53F0\u6578"
+  verbose_name: null
+  is_dttm: false
+  is_active: true
+  type: LONGLONG
+  advanced_data_type: null
+  groupby: true
+  filterable: true
+  expression: null
+  description: null
+  python_date_format: null
+  extra: {}
+- column_name: "\u662F\u5426\u6700\u65B0"
+  verbose_name: null
+  is_dttm: false
+  is_active: true
+  type: LONGLONG
+  advanced_data_type: null
+  groupby: true
+  filterable: true
+  expression: null
+  description: null
+  python_date_format: null
+  extra: {}
+- column_name: "\u71E6\u5764"
+  verbose_name: null
+  is_dttm: false
+  is_active: true
+  type: LONGLONG
+  advanced_data_type: null
+  groupby: true
+  filterable: true
+  expression: null
+  description: null
+  python_date_format: null
+  extra: {}
+version: 1.0.0
+database_uuid: b5b2e1b7-981e-41bd-9d87-18ef5bdd2ab8
