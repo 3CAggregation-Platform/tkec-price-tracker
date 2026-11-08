@@ -488,7 +488,8 @@ GCP 預設不開放這些 port，要在「VPC 網路 → 防火牆 → 建立虛
 | 版本 | `apache/superset:5.0.0` + pymysql，在 VM 上 build 成 `tk3c-superset:0.0.2`（約 3.7 GB，不推 Docker Hub） |
 | metadata | 帳號、連線、圖表、dashboard 存在 volume `superset_superset_home` 的 SQLite；VM 每日快照會一起備份 |
 | 記憶體 | 上限 1.5 GB，平常約 300 MB |
-| 帳密 | VM `.env` 的 `SUPERSET_SECRET_KEY`、`SUPERSET_ADMIN_PASSWORD`（登入帳號 `admin`）、`SUPERSET_DB_PASSWORD`（`superset_reader` 的密碼） |
+| 帳密 | VM `.env` 的 `SUPERSET_SECRET_KEY`、`SUPERSET_ADMIN_PASSWORD`（登入帳號 `admin`）、`SUPERSET_MOMO_PASSWORD`（組員帳號 `momo`）、`SUPERSET_DB_PASSWORD`（`superset_reader` 的密碼） |
+| 帳號 | `admin`、`momo` 都是 Admin 角色（共同開發）；新增帳號：`docker exec $(docker ps -q -f name=superset_superset) superset fab create-user --role Admin --username <帳號> --firstname <名> --lastname <姓> --email <email> --password <密碼>` |
 
 ### 第一次部署（VM 上，在 repo 根目錄）
 
