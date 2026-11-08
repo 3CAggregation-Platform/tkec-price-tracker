@@ -103,3 +103,20 @@ def crawl_momo_airfryer(self):
 @app.task(name="crawl_yahoo_airfryer", bind=True, max_retries=MAX_RETRIES)
 def crawl_yahoo_airfryer(self):
     return run_crawl_task(self, "氣炸鍋", lambda: run_yahoo_crawler("氣炸鍋"), "yahoo")
+
+
+@app.task(name="crawl_yahoo_fridge", bind=True, max_retries=MAX_RETRIES)
+def crawl_yahoo_fridge(self):
+    return run_crawl_task(self, "冰箱", lambda: run_yahoo_crawler("冰箱"), "yahoo")
+
+@app.task(name="crawl_yahoo_tv", bind=True, max_retries=MAX_RETRIES)
+def crawl_yahoo_tv(self):
+    return run_crawl_task(self, "電視", lambda: run_yahoo_crawler("電視"), "yahoo")
+
+@app.task(name="crawl_yahoo_robotvacuum", bind=True, max_retries=MAX_RETRIES)
+def crawl_yahoo_robotvacuum(self):
+    return run_crawl_task(self, "掃地機器人", lambda: run_yahoo_crawler("掃地機器人"), "yahoo")
+
+@app.task(name="crawl_yahoo_washer", bind=True, max_retries=MAX_RETRIES)
+def crawl_yahoo_washer(self):
+    return run_crawl_task(self, "洗衣機", lambda: run_yahoo_crawler("洗衣機"), "yahoo")

@@ -73,4 +73,21 @@ app.conf.beat_schedule = {
         "task": "crawl_yahoo_airfryer",
         "schedule": crontab(hour=20, minute=55),
     },
+    # Yahoo 其他分類接在氣炸鍋後面，每 5 分鐘一類
+    "crawl-yahoo-fridge-daily": {
+        "task": "crawl_yahoo_fridge",
+        "schedule": crontab(hour=21, minute=0),
+    },
+    "crawl-yahoo-tv-daily": {
+        "task": "crawl_yahoo_tv",
+        "schedule": crontab(hour=21, minute=5),
+    },
+    "crawl-yahoo-robotvacuum-daily": {
+        "task": "crawl_yahoo_robotvacuum",
+        "schedule": crontab(hour=21, minute=10),
+    },
+    "crawl-yahoo-washer-daily": {
+        "task": "crawl_yahoo_washer",
+        "schedule": crontab(hour=21, minute=15),
+    },
 }

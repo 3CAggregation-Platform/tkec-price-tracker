@@ -22,14 +22,18 @@ from app.tasks import (
     crawl_pchome_robotvacuum,
     crawl_pchome_washer,
     crawl_momo_airfryer,
+    crawl_yahoo_fridge,
+    crawl_yahoo_tv,
     crawl_yahoo_airfryer,
+    crawl_yahoo_robotvacuum,
+    crawl_yahoo_washer,
 )
 
 CHAINS = {
     "燦坤": [crawl_fridge, crawl_tv, crawl_airfryer, crawl_robotvacuum, crawl_washer],
     "PChome": [crawl_pchome_fridge, crawl_pchome_tv, crawl_pchome_airfryer, crawl_pchome_robotvacuum, crawl_pchome_washer],
     "momo": [crawl_momo_airfryer],
-    "Yahoo": [crawl_yahoo_airfryer],
+    "Yahoo": [crawl_yahoo_fridge, crawl_yahoo_tv, crawl_yahoo_airfryer, crawl_yahoo_robotvacuum, crawl_yahoo_washer],
 }
 
 
