@@ -485,7 +485,7 @@ GCP 預設不開放這些 port，要在「VPC 網路 → 防火牆 → 建立虛
 
 | 項目 | 設定 |
 |---|---|
-| 版本 | `apache/superset:5.0.0` + pymysql，在 VM 上 build 成 `tk3c-superset:0.0.1`（約 3.7 GB，不推 Docker Hub） |
+| 版本 | `apache/superset:5.0.0` + pymysql，在 VM 上 build 成 `tk3c-superset:0.0.2`（約 3.7 GB，不推 Docker Hub） |
 | metadata | 帳號、連線、圖表、dashboard 存在 volume `superset_superset_home` 的 SQLite；VM 每日快照會一起備份 |
 | 記憶體 | 上限 1.5 GB，平常約 300 MB |
 | 帳密 | VM `.env` 的 `SUPERSET_SECRET_KEY`、`SUPERSET_ADMIN_PASSWORD`（登入帳號 `admin`）、`SUPERSET_DB_PASSWORD`（`superset_reader` 的密碼） |
@@ -503,7 +503,7 @@ set -a && . ./.env && set +a
 docker exec $(docker ps -q -f name=tk3c_mysql) sh -c "mysql -uroot -p\"\$MYSQL_ROOT_PASSWORD\" -e \"CREATE USER IF NOT EXISTS 'superset_reader'@'%' IDENTIFIED BY '$SUPERSET_DB_PASSWORD'; GRANT SELECT ON tk3c_price_tracker.* TO 'superset_reader'@'%';\""
 
 # 3. build image 並部署（image 很大，build 前確認磁碟還有 5 GB 以上）
-docker build -t tk3c-superset:0.0.1 superset
+docker build -t tk3c-superset:0.0.2 superset
 docker stack deploy -c superset/docker-compose-superset.yml superset
 
 # 4. 初始化 metadata 與管理者帳號
