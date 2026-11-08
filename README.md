@@ -731,12 +731,14 @@ uv run python -m app.goods_daily
 ```bash
 # 建立 view（只要跑一次；組員的表要先存在）
 docker exec -i $(docker ps -q -f name=tk3c_mysql) sh -c 'mysql --default-character-set=utf8mb4 -uroot -p"$MYSQL_ROOT_PASSWORD"' < database/migrations/004_add_all_goods_daily_view.sql
+docker exec -i $(docker ps -q -f name=tk3c_mysql) sh -c 'mysql --default-character-set=utf8mb4 -uroot -p"$MYSQL_ROOT_PASSWORD"' < database/migrations/005_filter_momo_in_all_goods_daily.sql  # 加上 momo 資料清洗（取代 004 的 view 定義）
 ```
 
 - 欄位和 `goods_daily` 相同；組員的資料 `平台` 為 `momo`、`排名` 為 NULL、`連結` 由商品編號組成
 - 組員表的文字欄位 collation（`utf8mb4_unicode_ci`）在 view 裡統一轉成 `utf8mb4_0900_ai_ci`，double 欄位轉成 INT
 - view 為 `SQL SECURITY DEFINER`，Redash / Superset 的唯讀帳號只要有 `tk3c_price_tracker.all_goods_daily` 的 SELECT 權限，不需要 `mydb` 的權限
 - 組員重跑 `load_csv_to_mysql`（會整張重建）的期間，view 查不到 momo 的組員資料
+- momo 四類資料在 view 裡套用與本專案相同的清洗規則（`database/migrations/005_filter_momo_in_all_goods_daily.sql`）：名稱必須符合分類（原始資料有分類錯誤，例如「洗衣機」約一半是冰箱）、名稱需有容量、排除配件關鍵字；`mydb.momo_goods_daily` 原始資料不變
 
 ```sql
 -- 同型號跨平台比價

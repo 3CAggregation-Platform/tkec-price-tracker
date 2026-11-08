@@ -14,7 +14,7 @@ OUTPUT_FILE = "data/tk3c_tv_top20.csv"
 CATEGORY = "電視"
 SEARCH_KEYWORD = "電視"
 
-EXCLUDE_KEYWORDS = ["立架", "遙控器", "視訊盒", "支架", "腳架", "電視盒", "壁掛", "掛架", "轉接器", "訊號線", "HDMI線", "延長線", "立架"]
+EXCLUDE_KEYWORDS = ["立架", "遙控器", "視訊盒", "支架", "腳架", "電視盒", "壁掛", "掛架", "壁架", "電視架", "旋臂", "轉接器", "訊號線", "HDMI線", "延長線"]
 
 REQUIRE_SIZE_IN_NAME = True
 SIZE_PATTERN = re.compile(r"\d+\s*(型|吋)")
