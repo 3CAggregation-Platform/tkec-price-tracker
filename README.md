@@ -48,6 +48,7 @@ tk3c-price-tracker/
 │   ├── run_crawl.py               # 不經過 RabbitMQ，直接執行單一平台 + 分類的爬蟲（手動測試用）
 │   ├── db.py                      # 資料庫連線與寫入
 │   ├── goods_daily.py             # 轉成組員 momo 格式（品牌、型號統一寫法）並同步到 goods_daily
+│   ├── bigquery_sync.py           # MySQL → GCS → BigQuery 每日同步（Airflow tk3c_bigquery_sync 21:30）
 │   └── special_topic3C/           # 爬蟲
 │       ├── fridge_search.py       # 燦坤冰箱
 │       ├── tv_search.py           # 燦坤電視
@@ -65,10 +66,12 @@ tk3c-price-tracker/
 ├── airflow/
 │   ├── dags/tk3c_producer.py      # 每日 Producer DAG
 │   ├── dags/momo_producer.py      # 組員 momo 爬蟲的每日 Producer DAG
+│   ├── dags/tk3c_bigquery_sync.py # 每日 BigQuery 同步 DAG（21:30）
 │   ├── Dockerfile                 # 以課程的 tibame_dataflow image 為底，加入本專題的 DAG
 │   └── docker-compose-airflow.yml # Airflow swarm stack
 ├── momo/
 │   └── docker-compose-momo.yml    # 組員 momo 爬蟲的 swarm stack（RabbitMQ + worker）
+├── bigquery/sql/                  # BigQuery 分層：01 raw 外部表、02 fact、03 載入去重、04 dim、05 mart
 ├── superset/
 │   ├── Dockerfile                 # 官方 Superset 5.0 image 加裝 MySQL driver（pymysql）
 │   ├── superset_config.py         # SECRET_KEY、SQLite metadata、繁體中文介面
@@ -479,6 +482,51 @@ GCP 預設不開放這些 port，要在「VPC 網路 → 防火牆 → 建立虛
 
 - 不要用 `0.0.0.0/0`：phpMyAdmin 可用 root 登入，Flower 沒有密碼，開放給所有人很危險
 - 換網路（家裡、學校、手機熱點）後 IP 會變，要回來更新來源範圍
+
+## BigQuery 資料倉儲
+
+MySQL 負責每天的爬蟲寫入，BigQuery 負責分析：每天 21:30 由 Airflow 的 `tk3c_bigquery_sync` DAG 把 `all_goods_daily` 同步到 BigQuery，依課程的分層整理成 Raw → Fact / Dim → DataMart。
+
+```
+MySQL all_goods_daily（唯讀帳號 superset_reader，密碼存在 Secret Manager）
+  │  app/bigquery_sync.py：每天一個 JSON Lines 檔
+  ▼
+GCS  gs://tk3c-price-raw-fb94c850/raw/all_goods_daily/dt=YYYY-MM-DD/data.jsonl
+  ▼
+BigQuery dataset tk3c_dw（US）
+  raw_goods_daily              外部資料表，直接讀 GCS（dt 為 Hive 分區）
+  fact_price_daily             每日價格，依 crawl_date 分區、依 platform/category 叢集
+  dim_platform / dim_product   平台（顯示名稱、配色）與商品維度
+  mart_cross_platform_compare  同型號跨平台比價
+  mart_price_drop              降價排行（各平台最新一次 vs 上一次）
+  mart_price_change_stats      價格變動統計（觀察 7 天以上）
+  mart_double11                雙 11 價格檢驗（11/11 vs 前 30 天）
+```
+
+| 項目 | 設定 |
+|---|---|
+| 程式 | `app/bigquery_sync.py`，SQL 在 `bigquery/sql/01`～`05`（依序執行） |
+| 去重 | BigQuery 沒有 Primary Key：同步時先刪除那段日期的分區再寫入，並以 `QUALIFY ROW_NUMBER()` 保留同日、同平台、同分類、同商品一筆；同一天重跑不會重複 |
+| 權限 | VM 使用專用 service account `tk3c-pipeline`（scope `cloud-platform`），不下載金鑰；只有：專案的 BigQuery Job User、Log Writer、Monitoring Metric Writer，bucket 的 Storage Object Admin，dataset `tk3c_dw` 的 Data Editor，secret `tk3c-mysql-reader-password` 的 Secret Accessor |
+| 密碼 | Secret Manager `tk3c-mysql-reader-password`（= VM `.env` 的 `SUPERSET_DB_PASSWORD`）；DAG 與 image 裡都沒有密碼 |
+| 費用 | 資料量每天約 300 筆，一次完整同步處理約 5 MB，在 BigQuery 免費額度內 |
+
+```bash
+# 手動同步某一天 / 補歷史資料（VM 上）
+docker run --rm --network tk3c_attachable_network -e TZ=Asia/Taipei pennyliu32/tk3c-price-tracker:<版本> \
+  python -m app.bigquery_sync --date 2026-11-08
+docker run --rm --network tk3c_attachable_network -e TZ=Asia/Taipei pennyliu32/tk3c-price-tracker:<版本> \
+  python -m app.bigquery_sync --start 2026-09-12 --end 2026-11-08
+
+# 第一次設定（GCP，已完成）
+gcloud iam service-accounts create tk3c-pipeline
+gcloud storage buckets create gs://tk3c-price-raw-fb94c850 --location us-east1 --uniform-bucket-level-access
+bq --location=US mk --dataset <project>:tk3c_dw
+gcloud secrets create tk3c-mysql-reader-password --replication-policy=automatic
+# VM 換成 tk3c-pipeline（要先停機）
+gcloud compute instances set-service-account consumer-electronics-price-search-engine --zone us-east1-c \
+  --service-account tk3c-pipeline@<project>.iam.gserviceaccount.com --scopes cloud-platform
+```
 
 ## Superset 視覺化
 
