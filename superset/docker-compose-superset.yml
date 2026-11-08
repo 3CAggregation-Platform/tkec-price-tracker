@@ -1,0 +1,33 @@
+# Superset：用 tk3c_mysql 的資料做圖表與 dashboard
+#
+# 部署（VM 上，在 repo 根目錄）：
+#   docker build -t tk3c-superset:0.0.1 superset
+#   set -a && . ./.env && set +a
+#   docker stack deploy -c superset/docker-compose-superset.yml superset
+# 第一次部署後要初始化，見 README 的「Superset 圖表」
+services:
+  superset:
+    image: tk3c-superset:0.0.1  # 在 VM 上 build 的本地 image（單節點 swarm 不用推 Docker Hub）
+    ports:
+      - "8088:8088"  # 防火牆沒開 8088，用 SSH tunnel 從本機連；要給組員看再開防火牆
+    environment:
+      SUPERSET_SECRET_KEY: ${SUPERSET_SECRET_KEY}
+      TZ: Asia/Taipei
+    volumes:
+      - superset_home:/app/superset_home  # SQLite metadata：帳號、資料庫連線、圖表、dashboard
+    deploy:
+      replicas: 1  # SQLite 只能一個副本
+      restart_policy:
+        condition: any
+      resources:
+        limits:
+          memory: 1536M  # VM 只有 8 GB，避免吃掉爬蟲和 Airflow 的記憶體
+    networks:
+      - tk3c_attachable_network  # 用服務名稱 tk3c_mysql 連資料庫，MySQL 不用對外開
+
+networks:
+  tk3c_attachable_network:
+    external: true
+
+volumes:
+  superset_home:

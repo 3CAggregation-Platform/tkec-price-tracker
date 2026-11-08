@@ -69,6 +69,10 @@ tk3c-price-tracker/
 │   └── docker-compose-airflow.yml # Airflow swarm stack
 ├── momo/
 │   └── docker-compose-momo.yml    # 組員 momo 爬蟲的 swarm stack（RabbitMQ + worker）
+├── superset/
+│   ├── Dockerfile                 # 官方 Superset 5.0 image 加裝 MySQL driver（pymysql）
+│   ├── superset_config.py         # SECRET_KEY、SQLite metadata、繁體中文介面
+│   └── docker-compose-superset.yml # Superset swarm stack（port 8088）
 ├── redash/
 │   ├── queries/                   # 儀表板 6 個查詢的 SQL
 │   └── setup_redash.py            # 透過 Redash API 建立資料來源、查詢、圖表與儀表板
@@ -470,10 +474,64 @@ GCP 預設不開放這些 port，要在「VPC 網路 → 防火牆 → 建立虛
 | 流量方向 / 動作 | 輸入 / 允許 |
 | 目標 | 網路中的所有執行個體 |
 | 來源 IPv4 範圍 | **只填自己的 IP**，例如 `x.x.x.x/32`（可到 https://api.ipify.org 查） |
-| 通訊協定和通訊埠 | TCP `8080,15672,5555,8090,15673,5556,8081`（phpMyAdmin、RabbitMQ、Flower、Airflow、組員的 RabbitMQ、Flower 與 phpMyAdmin，需要哪個開哪個） |
+| 通訊協定和通訊埠 | TCP `8080,15672,5555,8090,15673,5556,8081,8088`（phpMyAdmin、RabbitMQ、Flower、Airflow、組員的 RabbitMQ、Flower 與 phpMyAdmin、Superset，需要哪個開哪個） |
 
 - 不要用 `0.0.0.0/0`：phpMyAdmin 可用 root 登入，Flower 沒有密碼，開放給所有人很危險
 - 換網路（家裡、學校、手機熱點）後 IP 會變，要回來更新來源範圍
+
+## Superset 視覺化
+
+[Apache Superset](https://superset.apache.org/) 部署在同一台 VM，用唯讀帳號 `superset_reader` 查 `tk3c_price_tracker`，圖表主要用 view `all_goods_daily`（四個平台 + 組員 momo 資料）。
+
+| 項目 | 設定 |
+|---|---|
+| 版本 | `apache/superset:5.0.0` + pymysql，在 VM 上 build 成 `tk3c-superset:0.0.1`（約 3.7 GB，不推 Docker Hub） |
+| metadata | 帳號、連線、圖表、dashboard 存在 volume `superset_superset_home` 的 SQLite；VM 每日快照會一起備份 |
+| 記憶體 | 上限 1.5 GB，平常約 300 MB |
+| 帳密 | VM `.env` 的 `SUPERSET_SECRET_KEY`、`SUPERSET_ADMIN_PASSWORD`（登入帳號 `admin`）、`SUPERSET_DB_PASSWORD`（`superset_reader` 的密碼） |
+
+### 第一次部署（VM 上，在 repo 根目錄）
+
+```bash
+# 1. .env 加上三組隨機密碼（只做一次）
+{ echo "SUPERSET_SECRET_KEY=$(openssl rand -base64 42 | tr -d '\n')"
+  echo "SUPERSET_ADMIN_PASSWORD=$(openssl rand -base64 18 | tr -d '/+=\n')"
+  echo "SUPERSET_DB_PASSWORD=$(openssl rand -base64 18 | tr -d '/+=\n')"; } >> .env
+set -a && . ./.env && set +a
+
+# 2. 建立唯讀帳號（all_goods_daily 是 SQL SECURITY DEFINER 的 view，不需要 mydb 的權限）
+docker exec $(docker ps -q -f name=tk3c_mysql) sh -c "mysql -uroot -p\"\$MYSQL_ROOT_PASSWORD\" -e \"CREATE USER IF NOT EXISTS 'superset_reader'@'%' IDENTIFIED BY '$SUPERSET_DB_PASSWORD'; GRANT SELECT ON tk3c_price_tracker.* TO 'superset_reader'@'%';\""
+
+# 3. build image 並部署（image 很大，build 前確認磁碟還有 5 GB 以上）
+docker build -t tk3c-superset:0.0.1 superset
+docker stack deploy -c superset/docker-compose-superset.yml superset
+
+# 4. 初始化 metadata 與管理者帳號
+C=$(docker ps -q -f name=superset_superset)
+docker exec $C superset db upgrade
+docker exec $C superset fab create-admin --username admin --firstname Admin --lastname User --email admin@example.com --password "$SUPERSET_ADMIN_PASSWORD"
+docker exec $C superset init
+```
+
+- 不要對 VM 下 `docker image prune -a`：Superset 的 image 是本地 build，沒推 Docker Hub，刪掉就要重新 build
+
+### 連線方式
+
+防火牆沒有開 8088，從本機用 SSH tunnel 連（這個指令會一直停著，另開一個終端機執行，用完按 Ctrl+C）：
+
+```bash
+gcloud compute ssh consumer-electronics-price-search-engine --zone us-east1-c -- -N -L 8088:localhost:8088
+```
+
+瀏覽器開 http://localhost:8088 ，帳號 `admin`。要給組員看時再把 `8088` 加進上方防火牆規則。
+
+在 Superset 新增資料庫連線（設定 → 資料庫連線 → + 資料庫 → MySQL → 改用 SQLAlchemy URI）：
+
+```
+mysql+pymysql://superset_reader:<SUPERSET_DB_PASSWORD>@tk3c_mysql:3306/tk3c_price_tracker?charset=utf8mb4
+```
+
+`charset=utf8mb4` 一定要加，否則中文欄位和商品名稱會變亂碼。
 
 ## Redash 視覺化
 
@@ -703,5 +761,5 @@ ORDER BY 型號, 售價;
 
 ## 未來規劃
 
-- Redash / Superset 用 `all_goods_daily` 做三平台比價圖表
+- Superset 用 `all_goods_daily` 做四平台比價 dashboard
 - PChome 商品名稱沒有括號的型號抓取規則（目前約一半抓不到型號）
