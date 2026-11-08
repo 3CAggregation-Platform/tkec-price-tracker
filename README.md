@@ -33,8 +33,8 @@
   - `price_history`：每日價格歷史（依商品編號關聯，記錄每次爬取的價格、排名與評價；同一天重跑只保留最後一次）
     - `rating` / `review_count`：平均星數與評價則數，PChome、momo、Yahoo 有；燦坤及無人評價的商品為 NULL
   - `crawl_log`：每次爬蟲執行的結果（平台、分類、筆數、成功或沒抓到資料）
-  - `goods_daily`：和組員 momo 資料同格式的每日商品表（中文欄位），每次爬蟲寫入後自動同步，用來合併三個平台，見[與組員資料合併](#與組員資料合併)
-  - `all_goods_daily`（view）：`goods_daily` + 組員的 `mydb.momo_goods_daily`，三平台比價、圖表都查這個
+  - `goods_daily`：與 momo 四類資料（`mydb.momo_goods_daily`）同格式的每日商品表（中文欄位），每次爬蟲寫入後自動同步，見[與 momo 四類資料整合](#與-momo-四類資料整合)
+  - `all_goods_daily`（view）：`goods_daily` + `mydb.momo_goods_daily`（經清洗），四平台比價、圖表、BigQuery 同步都查這個
 
 ## 專案結構
 
@@ -47,7 +47,7 @@ tk3c-price-tracker/
 │   ├── producer.py                # 把 8 個爬蟲任務送進 RabbitMQ，給 Airflow DockerOperator 呼叫
 │   ├── run_crawl.py               # 不經過 RabbitMQ，直接執行單一平台 + 分類的爬蟲（手動測試用）
 │   ├── db.py                      # 資料庫連線與寫入
-│   ├── goods_daily.py             # 轉成組員 momo 格式（品牌、型號統一寫法）並同步到 goods_daily
+│   ├── goods_daily.py             # 轉成與 momo 四類資料相同的中文欄位格式（品牌、型號統一寫法）並同步到 goods_daily
 │   ├── bigquery_sync.py           # MySQL → GCS → BigQuery 每日同步（Airflow tk3c_bigquery_sync 21:30）
 │   └── special_topic3C/           # 爬蟲
 │       ├── fridge_search.py       # 燦坤冰箱
@@ -65,12 +65,9 @@ tk3c-price-tracker/
 ├── data/                          # 爬蟲單獨執行時輸出的 CSV
 ├── airflow/
 │   ├── dags/tk3c_producer.py      # 每日 Producer DAG
-│   ├── dags/momo_producer.py      # 組員 momo 爬蟲的每日 Producer DAG
 │   ├── dags/tk3c_bigquery_sync.py # 每日 BigQuery 同步 DAG（21:30）
 │   ├── Dockerfile                 # 以課程的 tibame_dataflow image 為底，加入本專題的 DAG
 │   └── docker-compose-airflow.yml # Airflow swarm stack
-├── momo/
-│   └── docker-compose-momo.yml    # 組員 momo 爬蟲的 swarm stack（RabbitMQ + worker）
 ├── bigquery/sql/                  # BigQuery 分層：01 raw 外部表、02 fact、03 載入去重、04 dim、05 mart
 ├── superset/
 │   ├── Dockerfile                 # 官方 Superset 5.0 image 加裝 MySQL driver（pymysql）
@@ -442,7 +439,7 @@ docker service logs --since 2h tk3c_celery-worker 2>&1 | tail -50
 
 | 層 | 內容 | 時間（台灣） | 用途 |
 |---|---|---|---|
-| mysqldump | `tk3c_price_tracker`、`mydb`（組員 momo）、`airflow` 各一個 `.sql.gz`，存在 VM 的 `~/backups` | 每天 21:00（兩個爬蟲都跑完後） | 單獨還原某個資料庫、資料被誤刪時救回 |
+| mysqldump | `tk3c_price_tracker`、`mydb`（momo 四類資料）、`airflow` 各一個 `.sql.gz`，存在 VM 的 `~/backups` | 每天 21:00（兩個爬蟲都跑完後） | 單獨還原某個資料庫、資料被誤刪時救回 |
 | 磁碟快照 | 整顆 VM 磁碟（快照排程 `default-schedule-1`，region `us-east1`） | 每天 18:00 起 | VM 或磁碟壞掉時整台還原；`~/backups` 也會一起被快照到 VM 之外 |
 
 **mysqldump 排程**（腳本 `database/backup_mysql.sh`，VM 時區是 UTC，所以 cron 寫 13:00）：
@@ -478,7 +475,7 @@ GCP 預設不開放這些 port，要在「VPC 網路 → 防火牆 → 建立虛
 | 流量方向 / 動作 | 輸入 / 允許 |
 | 目標 | 網路中的所有執行個體 |
 | 來源 IPv4 範圍 | **只填自己的 IP**，例如 `x.x.x.x/32`（可到 https://api.ipify.org 查） |
-| 通訊協定和通訊埠 | TCP `8080,15672,5555,8090,15673,5556,8081,8088`（phpMyAdmin、RabbitMQ、Flower、Airflow、組員的 RabbitMQ、Flower 與 phpMyAdmin、Superset，需要哪個開哪個） |
+| 通訊協定和通訊埠 | TCP `8080,15672,5555,8090,8088`（phpMyAdmin、RabbitMQ、Flower、Airflow、Superset，需要哪個開哪個） |
 
 - 不要用 `0.0.0.0/0`：phpMyAdmin 可用 root 登入，Flower 沒有密碼，開放給所有人很危險
 - 換網路（家裡、學校、手機熱點）後 IP 會變，要回來更新來源範圍
@@ -530,15 +527,15 @@ gcloud compute instances set-service-account consumer-electronics-price-search-e
 
 ## Superset 視覺化
 
-[Apache Superset](https://superset.apache.org/) 部署在同一台 VM，用唯讀帳號 `superset_reader` 查 `tk3c_price_tracker`，圖表主要用 view `all_goods_daily`（四個平台 + 組員 momo 資料）。
+[Apache Superset](https://superset.apache.org/) 部署在同一台 VM，用唯讀帳號 `superset_reader` 查 `tk3c_price_tracker`，圖表主要用 view `all_goods_daily`（四個平台，含 momo 四類資料）。
 
 | 項目 | 設定 |
 |---|---|
 | 版本 | `apache/superset:5.0.0` + pymysql，在 VM 上 build 成 `tk3c-superset:0.0.2`（約 3.7 GB，不推 Docker Hub） |
 | metadata | 帳號、連線、圖表、dashboard 存在 volume `superset_superset_home` 的 SQLite；VM 每日快照會一起備份 |
 | 記憶體 | 上限 1.5 GB，平常約 300 MB |
-| 帳密 | VM `.env` 的 `SUPERSET_SECRET_KEY`、`SUPERSET_ADMIN_PASSWORD`（登入帳號 `admin`）、`SUPERSET_MOMO_PASSWORD`（組員帳號 `momo`）、`SUPERSET_DB_PASSWORD`（`superset_reader` 的密碼） |
-| 帳號 | `admin`、`momo` 都是 Admin 角色（共同開發）；新增帳號：`docker exec $(docker ps -q -f name=superset_superset) superset fab create-user --role Admin --username <帳號> --firstname <名> --lastname <姓> --email <email> --password <密碼>` |
+| 帳密 | VM `.env` 的 `SUPERSET_SECRET_KEY`、`SUPERSET_ADMIN_PASSWORD`（登入帳號 `admin`）、`SUPERSET_DB_PASSWORD`（`superset_reader` 的密碼） |
+| 帳號 | 新增帳號：`docker exec $(docker ps -q -f name=superset_superset) superset fab create-user --role Admin --username <帳號> --firstname <名> --lastname <姓> --email <email> --password <密碼>` |
 
 ### 第一次部署（VM 上，在 repo 根目錄）
 
@@ -573,7 +570,7 @@ docker exec $C superset init
 gcloud compute ssh consumer-electronics-price-search-engine --zone us-east1-c -- -N -L 8088:localhost:8088
 ```
 
-瀏覽器開 http://localhost:8088 ，帳號 `admin`。要給組員看時再把 `8088` 加進上方防火牆規則。
+瀏覽器開 http://localhost:8088 ，帳號 `admin`。要給其他人看時再把 `8088` 加進上方防火牆規則。
 
 在 Superset 新增資料庫連線（設定 → 資料庫連線 → + 資料庫 → MySQL → 改用 SQLAlchemy URI）：
 
@@ -607,7 +604,7 @@ docker exec $C superset import-dashboards -p /tmp/dashboards.zip -u admin
 
 使用課程部署的 Redash（swarm stack `redash`，http://localhost:5005），連到本專案的 MySQL。
 
-> 資料庫搬到 GCP VM 後，筆電上的 Redash 已移除，改由組員架設，連到 VM 上的 MySQL。以下為原本在本機的設定方式。
+> 資料庫搬到 GCP VM 後，筆電上的 Redash 已移除，視覺化改用 Superset（見上方）。以下為原本在本機的設定方式。
 
 ### 儀表板內容
 
@@ -648,144 +645,17 @@ swarm 版的 MySQL container 名稱帶亂數，第 1 步的 `tk3c_mysql` 改成 
 
 重複執行腳本不會產生重複的查詢或儀表板，同名的會直接更新（在 Redash 網頁上手動改過的查詢內容會被覆蓋）。
 
-## 組員 momo 爬蟲（部署在同一台 VM）
+## 與 momo 四類資料整合
 
-組員的 momo 爬蟲（[bihruwang/ecommerce_crawler](https://github.com/bihruwang/ecommerce_crawler)，分類：洗衣機、冰箱、電視、掃地機器人）也跑在 GCP VM 上，由組員自行部署與更新。本專案自己的 momo 爬蟲只爬氣炸鍋，兩者分類不重疊。
-
-```
-Airflow momo_producer（每天 20:30）→ momo-rabbitmq → momo-worker 爬蟲 → tk3c_mysql 的 mydb.momo_goods_daily
-```
-
-| 項目 | 設定 | 原因 |
-|---|---|---|
-| Stack | `momo`（`momo/docker-compose-momo.yml`） | 組員可獨立更新，不影響 tk3c stack |
-| RabbitMQ | 獨立的 `momo-rabbitmq`（管理介面 port 15673） | 兩邊程式都用預設 `celery` 佇列，共用會互搶任務 |
-| Flower | 獨立的 `momo-flower`（port 5556） | 組員監控自己的任務 |
-| phpMyAdmin | 獨立的 `momo-phpmyadmin`（port 8081），要用 `momo_writer` 登入 | 本專題的 phpMyAdmin（8080）自動以 root 登入，不能給組員 |
-| 資料庫 | 同一台 MySQL 的 `mydb` 資料庫 | 組員程式寫死 `mydb`；不用改程式 |
-| MySQL 帳號 | `momo_writer`，只能存取 `mydb` | 碰不到本專題的 `tk3c_price_tracker` |
-| 排程 | 本專題 Airflow 的 `momo_producer` DAG | 和 `tk3c_producer` 一起在 Airflow 網頁上監控 |
-| 記憶體上限 | RabbitMQ 512 MB、worker 768 MB、Flower 與 phpMyAdmin 各 256 MB | 避免拖垮整台 VM |
-
-### VM 管理者：第一次設定（只需一次）
-
-1. **給組員 VM 權限**：GCP 主控台「IAM 與管理 → IAM → 授予存取權」，輸入組員的 Google 帳號，角色選「Compute 執行個體管理員 (v1)」和「服務帳戶使用者」。組員就能用瀏覽器 SSH 連進 VM（這個角色也能停止 / 刪除 VM，只給信任的組員）。
-
-2. **在 VM 的 `.env` 加上三組密碼**（隨機產生，之後也要給組員）：
-
-   ```
-   # 組員 momo 爬蟲
-   MOMO_DB_PASSWORD=...
-   MOMO_RABBITMQ_USER=momo
-   MOMO_RABBITMQ_PASS=...
-   ```
-
-3. **建立 `mydb` 資料庫與 `momo_writer` 帳號**：
-
-   ```bash
-   set -a; source .env; set +a
-   docker exec -e MP="$MOMO_DB_PASSWORD" $(docker ps -q -f name=tk3c_mysql) sh -c 'mysql -uroot -p"$MYSQL_ROOT_PASSWORD" -e "
-   CREATE DATABASE IF NOT EXISTS mydb CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-   CREATE USER IF NOT EXISTS '\''momo_writer'\''@'\''%'\'' IDENTIFIED BY '\''$MP'\'';
-   GRANT ALL PRIVILEGES ON mydb.* TO '\''momo_writer'\''@'\''%'\'';"'
-   ```
-
-   Redash 唯讀帳號 `redash_reader` 建立後，再補上 `GRANT SELECT ON mydb.* TO 'redash_reader'@'%';`（帳號不存在時 MySQL 會報 ERROR 1410）。
-
-   momo stack 部署好之後，`momo_goods_daily` 表由組員的 `load_csv_to_mysql` 建立並匯入歷史 CSV（只跑一次，它用 replace 會整張重建）。組員的 image 沒有包 `data/`，所以從 GitHub 取 CSV 複製進 worker 再執行：
-
-   ```bash
-   git clone --depth 1 https://github.com/bihruwang/ecommerce_crawler.git ~/momo_src
-   C=$(docker ps -q -f name=momo_momo-worker)
-   docker cp ~/momo_src/data/. $C:/crawler/data/
-   docker exec $C uv run python -m crawler.load_csv_to_mysql
-   rm -rf ~/momo_src
-   ```
-
-4. **Airflow 加入 `momo_producer` DAG**：本機 build 新版 Airflow image 推上 Docker Hub，VM 上 `git pull` 後重新部署：
-
-   ```bash
-   # 本機
-   docker build -t pennyliu32/tk3c-airflow:0.0.3 airflow && docker push pennyliu32/tk3c-airflow:0.0.3
-
-   # VM
-   set -a; source .env; set +a
-   AIRFLOW_IMAGE_VERSION=0.0.3 TK3C_IMAGE_VERSION=<目前版本> MOMO_IMAGE_VERSION=0.0.2 \
-     docker stack deploy --with-registry-auth -c airflow/docker-compose-airflow.yml tk3c-airflow
-   ```
-
-5. **組員的 Airflow 帳號（只能操作 `momo_producer`）**：`momo_producer.py` 設了 `access_control`，只開放給角色 `momo`。角色 `momo` 是複製內建 User 角色、拿掉「所有 DAG」權限而成，所以組員看不到 `tk3c_producer`，但能看、觸發、重跑自己的 DAG 和看 log。
-
-   角色**一定要在部署含 `access_control` 的 DAG 之前建立**，否則 Airflow 找不到角色，`momo_producer` 會載入失敗。
-
-   ```bash
-   # 本機：build 含 access_control 的 Airflow image
-   docker build -t pennyliu32/tk3c-airflow:0.0.4 airflow && docker push pennyliu32/tk3c-airflow:0.0.4
-
-   # VM：先建角色（用目前還在跑的 webserver），再部署新版，最後建立組員帳號
-   git pull
-   docker exec -i $(docker ps -q -f name=tk3c-airflow_webserver) /dataflow/.venv/bin/python - < airflow/create_momo_role.py
-   set -a; source .env; set +a
-   AIRFLOW_IMAGE_VERSION=0.0.4 TK3C_IMAGE_VERSION=<目前版本> MOMO_IMAGE_VERSION=0.0.2 \
-     docker stack deploy --with-registry-auth -c airflow/docker-compose-airflow.yml tk3c-airflow
-   # 等 1～2 分鐘，docker stack services tk3c-airflow 全部 1/1 後再繼續
-   docker exec $(docker ps -q -f name=tk3c-airflow_webserver) /dataflow/.venv/bin/airflow sync-perm --include-dags
-   docker exec $(docker ps -q -f name=tk3c-airflow_webserver) /dataflow/.venv/bin/airflow users create \
-     --username momo --password '<自訂密碼>' --firstname momo --lastname member --role momo --email momo@example.com
-   ```
-
-   之後再有組員加入，照同樣做法：在 `create_momo_role.py` 改角色名稱建一個新角色，在他的 DAG 加上對應的 `access_control`。
-
-### 組員：部署與更新
-
-第一次用瀏覽器 SSH 連進 VM 後：
-
-```bash
-# 1. 讓自己的帳號可以用 docker（執行完要關掉 SSH 視窗重新連線）
-sudo usermod -aG docker $USER
-
-# 2. 取得部署設定
-git clone https://github.com/3CAggregation-Platform/tkec-price-tracker.git tk3c-price-tracker
-cd tk3c-price-tracker/momo
-
-# 3. 建立 momo/.env（三個值向 VM 管理者拿；.env 不會進 git）
-cat > .env <<'ENV'
-MOMO_DB_PASSWORD=...
-MOMO_RABBITMQ_USER=momo
-MOMO_RABBITMQ_PASS=...
-ENV
-
-# 4. 部署
-set -a; source .env; set +a
-MOMO_IMAGE_VERSION=0.0.2 docker stack deploy --with-registry-auth -c docker-compose-momo.yml momo
-```
-
-更新爬蟲程式：推新版 image 到 Docker Hub，再用新的 `MOMO_IMAGE_VERSION` 重跑第 4 步。如果改到 producer（例如增減分類），也請 VM 管理者把 Airflow 的 `MOMO_IMAGE_VERSION` 一起升版。
-
-```bash
-# 服務狀態（四個都要是 1/1）
-docker stack services momo
-
-# 爬蟲 log
-docker service logs --since 2h momo_momo-worker 2>&1 | tail -50
-
-# 今天寫入幾筆
-docker exec $(docker ps -q -f name=tk3c_mysql) sh -c 'mysql --default-character-set=utf8mb4 -umomo_writer -p"'"$MOMO_DB_PASSWORD"'" mydb -e "SELECT 抓取日期, 分類, COUNT(*) FROM momo_goods_daily GROUP BY 抓取日期, 分類 ORDER BY 抓取日期 DESC LIMIT 8;"'
-```
-
-不用等到 20:30，也可以在 Airflow 網頁（port 8090）按 `momo_producer` 右邊的 ▶ 手動跑一次。
-
-## 與組員資料合併
-
-組員的 momo 爬蟲（[bihruwang/ecommerce_crawler](https://github.com/bihruwang/ecommerce_crawler)）存成 `momo_goods_daily` 表，本專案以組員的格式為主，另外產生一張同格式的 `goods_daily`：
+momo 的冰箱、電視、洗衣機、掃地機器人由獨立的 momo 爬蟲寫入同一台 MySQL 的 `mydb.momo_goods_daily`。本專案以這張表的中文欄位格式為準，另外產生一張同格式的 `goods_daily`：
 
 | 欄位 | 說明 |
 |---|---|
-| 平台 | `tk3c` / `pchome`（組員的資料為 `momo`） |
-| 抓取日期、分類、商品編號、商品名稱 | 和組員相同 |
-| 廠牌 | 統一為組員的「英文 中文」寫法，例如燦坤的「聲寶SAMPO」、PChome 的「SAMPO」都改成「SAMPO 聲寶」（對照表在 `app/goods_daily.py` 的 `BRANDS`） |
-| 型號 | 去掉括號內的顏色 / 版本（`SR-C48GDV(P2)` → `SR-C48GDV`）；沒有型號時用組員的規則，從商品名稱最後一組括號抓 |
-| 售價、原價、評分、評價數 | 和組員相同（整數價格；燦坤沒有評價為 NULL） |
+| 平台 | `tk3c` / `pchome` / `yahoo` / `momo` |
+| 抓取日期、分類、商品編號、商品名稱 | 與 `momo_goods_daily` 相同 |
+| 廠牌 | 統一為「英文 中文」寫法，例如燦坤的「聲寶SAMPO」、PChome 的「SAMPO」都改成「SAMPO 聲寶」（對照表在 `app/goods_daily.py` 的 `BRANDS`） |
+| 型號 | 去掉括號內的顏色 / 版本（`SR-C48GDV(P2)` → `SR-C48GDV`）；沒有型號時從商品名稱最後一組括號抓 |
+| 售價、原價、評分、評價數 | 與 `momo_goods_daily` 相同（整數價格；燦坤沒有評價為 NULL） |
 | 銷量、庫存、促銷文案、有政府補助、銷量下限 | 只有 momo 有，本專案為 NULL |
 | 排名、連結 | 本專案多出的欄位，momo 的排名可用資料順序（依銷量排序）補上 |
 
@@ -795,18 +665,18 @@ docker exec -i $(docker ps -q -f name=tk3c_mysql) sh -c 'mysql --default-charact
 uv run python -m app.goods_daily
 ```
 
-組員的資料（同一台 MySQL 的 `mydb.momo_goods_daily`，見上方「組員 momo 爬蟲」）不搬進 `goods_daily`，而是用 view `all_goods_daily` 把兩張表合在一起，組員每天 20:30 爬完就查得到，不用另外同步：
+`mydb.momo_goods_daily` 不搬進 `goods_daily`，而是用 view `all_goods_daily` 把兩張表合在一起，momo 每天 20:30 爬完就查得到，不用另外同步：
 
 ```bash
-# 建立 view（只要跑一次；組員的表要先存在）
+# 建立 view（只要跑一次；mydb.momo_goods_daily 要先存在）
 docker exec -i $(docker ps -q -f name=tk3c_mysql) sh -c 'mysql --default-character-set=utf8mb4 -uroot -p"$MYSQL_ROOT_PASSWORD"' < database/migrations/004_add_all_goods_daily_view.sql
 docker exec -i $(docker ps -q -f name=tk3c_mysql) sh -c 'mysql --default-character-set=utf8mb4 -uroot -p"$MYSQL_ROOT_PASSWORD"' < database/migrations/005_filter_momo_in_all_goods_daily.sql  # 加上 momo 資料清洗（取代 004 的 view 定義）
 ```
 
-- 欄位和 `goods_daily` 相同；組員的資料 `平台` 為 `momo`、`排名` 為 NULL、`連結` 由商品編號組成
-- 組員表的文字欄位 collation（`utf8mb4_unicode_ci`）在 view 裡統一轉成 `utf8mb4_0900_ai_ci`，double 欄位轉成 INT
+- 欄位和 `goods_daily` 相同；momo 四類資料的 `平台` 為 `momo`、`排名` 為 NULL、`連結` 由商品編號組成
+- `momo_goods_daily` 的文字欄位 collation（`utf8mb4_unicode_ci`）在 view 裡統一轉成 `utf8mb4_0900_ai_ci`，double 欄位轉成 INT
 - view 為 `SQL SECURITY DEFINER`，Redash / Superset 的唯讀帳號只要有 `tk3c_price_tracker.all_goods_daily` 的 SELECT 權限，不需要 `mydb` 的權限
-- 組員重跑 `load_csv_to_mysql`（會整張重建）的期間，view 查不到 momo 的組員資料
+- `momo_goods_daily` 整張重新匯入的期間，view 查不到 momo 四類資料
 - momo 四類資料在 view 裡套用與本專案相同的清洗規則（`database/migrations/005_filter_momo_in_all_goods_daily.sql`）：依名稱修正冰箱／洗衣機的分類並去除重複（原始資料有分類錯誤，例如「洗衣機」約一半是冰箱）、名稱需有容量、排除配件關鍵字；`mydb.momo_goods_daily` 原始資料不變
 
 ```sql
@@ -830,8 +700,13 @@ ORDER BY 型號, 售價;
 - [x] 使用 Airflow 取代 Celery beat 排程每日爬蟲
 - [x] 使用 Redash 視覺化價格走勢與比價
 - [x] 部署到 GCP Compute Engine VM，24 小時自動排程爬取
+- [x] 整合 momo 四類資料（view `all_goods_daily`），並在 view 裡修正分類、排除配件
+- [x] 使用 Superset 建立「家電比價」dashboard（每日比價、長期分析兩個分頁）
+- [x] 建立 BigQuery 資料倉儲：GCS raw → fact / dim → DataMart，Airflow 每日同步，密碼存在 Secret Manager
 
 ## 未來規劃
 
-- Superset 用 `all_goods_daily` 做四平台比價 dashboard
+- 追蹤清單：固定 50～100 個熱門型號，每天到各平台用型號搜尋，提高可跨平台比價的商品數
+- Superset 連接 BigQuery 的 DataMart、Looker Studio 報表
+- momo 自 2026/11/08 起擋下程式存取（403），目前保留歷史資料、不繞過防護
 - PChome 商品名稱沒有括號的型號抓取規則（目前約一半抓不到型號）
