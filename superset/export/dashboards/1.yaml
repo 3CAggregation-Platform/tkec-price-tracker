@@ -573,13 +573,10 @@ metadata:
       - TAB-hBUIFraBC9Q8i7OyJrvDR
       excluded:
       - 1
+      - 10
       - 2
       - 3
       - 5
     type: NATIVE_FILTER
     description: ''
-    chartsInScope:
-    - 4
-    tabsInScope:
-    - TAB-hBUIFraBC9Q8i7OyJrvDR
 version: 1.0.0
