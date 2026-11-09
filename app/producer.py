@@ -27,13 +27,17 @@ from app.tasks import (
     crawl_yahoo_airfryer,
     crawl_yahoo_robotvacuum,
     crawl_yahoo_washer,
+    crawl_watch_tk3c,
+    crawl_watch_pchome,
+    crawl_watch_yahoo,
 )
 
 CHAINS = {
-    "燦坤": [crawl_fridge, crawl_tv, crawl_airfryer, crawl_robotvacuum, crawl_washer],
-    "PChome": [crawl_pchome_fridge, crawl_pchome_tv, crawl_pchome_airfryer, crawl_pchome_robotvacuum, crawl_pchome_washer],
+    # 每個網站最後再跑追蹤清單（固定型號搜尋，app/watchlist.py）；momo 擋程式存取，沒有追蹤清單
+    "燦坤": [crawl_fridge, crawl_tv, crawl_airfryer, crawl_robotvacuum, crawl_washer, crawl_watch_tk3c],
+    "PChome": [crawl_pchome_fridge, crawl_pchome_tv, crawl_pchome_airfryer, crawl_pchome_robotvacuum, crawl_pchome_washer, crawl_watch_pchome],
     "momo": [crawl_momo_airfryer],
-    "Yahoo": [crawl_yahoo_fridge, crawl_yahoo_tv, crawl_yahoo_airfryer, crawl_yahoo_robotvacuum, crawl_yahoo_washer],
+    "Yahoo": [crawl_yahoo_fridge, crawl_yahoo_tv, crawl_yahoo_airfryer, crawl_yahoo_robotvacuum, crawl_yahoo_washer, crawl_watch_yahoo],
 }
 
 

@@ -14,6 +14,7 @@
   | Yahoo 購物中心 | 冰箱、電視、氣炸鍋、掃地機器人、洗衣機 | 搜尋頁依銷量排序，只保留 Yahoo 分類符合的商品（逐層比對分類路徑，例如電視要在「電視 > 電視」，不含「電視 > 電視配件」），再用燦坤的配件規則過濾 |
 
   各平台共用燦坤爬蟲的配件過濾規則（排除關鍵字、名稱需有容量），標準一致
+- 追蹤清單：固定一批熱門型號（`watchlist`，目前 85 個），每天到燦坤、PChome、Yahoo 用型號搜尋，記錄各平台最低價（`watch_price_daily`），見[追蹤清單](#追蹤清單)
 - 使用 MySQL 儲存商品主檔與每日價格歷史，方便追蹤價格變化趨勢
 - 使用 Airflow 每天自動排程爬取（DockerOperator 啟動爬蟲 container），失敗會自動重試，可在網頁上查看每次執行的狀態與 log
 - 使用 Redash 視覺化兩個平台的價格走勢、價格比較、排行榜、降價商品與評價
@@ -34,6 +35,7 @@
     - `rating` / `review_count`：平均星數與評價則數，PChome、momo、Yahoo 有；燦坤及無人評價的商品為 NULL
   - `crawl_log`：每次爬蟲執行的結果（平台、分類、筆數、成功或沒抓到資料）
   - `goods_daily`：與 momo 四類資料（`mydb.momo_goods_daily`）同格式的每日商品表（中文欄位），每次爬蟲寫入後自動同步，見[與 momo 四類資料整合](#與-momo-四類資料整合)
+  - `watchlist` / `watch_price_daily`：追蹤清單的型號與每日各平台最低價（中文欄位），見[追蹤清單](#追蹤清單)
   - `all_goods_daily`（view）：`goods_daily` + `mydb.momo_goods_daily`（經清洗），四平台比價、圖表、BigQuery 同步都查這個
 
 ## 專案結構
@@ -47,6 +49,7 @@ tk3c-price-tracker/
 │   ├── producer.py                # 把 8 個爬蟲任務送進 RabbitMQ，給 Airflow DockerOperator 呼叫
 │   ├── run_crawl.py               # 不經過 RabbitMQ，直接執行單一平台 + 分類的爬蟲（手動測試用）
 │   ├── db.py                      # 資料庫連線與寫入
+│   ├── watchlist.py               # 追蹤清單：讀 watchlist → 各平台用型號搜尋 → 寫入 watch_price_daily
 │   ├── goods_daily.py             # 轉成與 momo 四類資料相同的中文欄位格式（品牌、型號統一寫法）並同步到 goods_daily
 │   ├── bigquery_sync.py           # MySQL → GCS → BigQuery 每日同步（Airflow tk3c_bigquery_sync 21:30）
 │   └── special_topic3C/           # 爬蟲
@@ -57,7 +60,8 @@ tk3c-price-tracker/
 │       ├── washer_search.py       # 燦坤洗衣機
 │       ├── pchome_search.py       # PChome 五個分類（共用燦坤的配件過濾規則）
 │       ├── momo_search.py         # momo 氣炸鍋
-│       └── yahoo_search.py        # Yahoo 購物中心五大分類
+│       ├── yahoo_search.py        # Yahoo 購物中心五大分類
+│       └── watch_search.py        # 追蹤清單：用型號搜尋燦坤、PChome、Yahoo 並比對型號
 ├── database/
 │   ├── init.sql                   # 資料庫初始化 schema（新建資料庫用）
 │   ├── backup_mysql.sh            # VM 每日 mysqldump 備份（cron 執行，保留 14 天）
@@ -293,7 +297,7 @@ Airflow（每天 20:00）→ DockerOperator 執行 python -m app.producer → Ra
 
 - 參考課程 `dataflow` 的 `ProducerScheduler`：image 以 `linsamtw/tibame_dataflow:0.0.7`（Airflow 2.7.3）為底，只加入本專題的 DAG；用 DockerOperator 啟動 `pennyliu32/tk3c-price-tracker` 執行 producer，跑完自動刪除 container
 - producer container 和 `tk3c_rabbitmq` 都在 `tk3c_attachable_network`，所以送得進任務（RabbitMQ 同時也在 `tk3c_swarm_network` 給 celery-worker 用）
-- 每個網站各送一條 Celery chain（共 12 個任務）：不同網站同時跑，同一個網站的分類依序跑（燦坤 5 類約 6 分鐘，其他網站 1 分鐘內），進度看 Flower（http://localhost:5555）
+- 每個網站各送一條 Celery chain（共 19 個任務）：不同網站同時跑，同一個網站的分類依序跑，最後跑該網站的追蹤清單（燦坤 5 類約 6 分鐘＋追蹤清單約 10 分鐘，其他網站各約 5 分鐘），進度看 Flower（http://localhost:5555）
 - Airflow 只負責送任務，送成功就是綠色；爬蟲失敗的重試在 `app/tasks.py`（隔 5 分鐘，最多 3 次）
 - metadata 存在本專題 MySQL 的 `airflow` 資料庫（專用帳號 `airflow`，只能存取這個資料庫）
 - 帳密、金鑰都由 `.env` 的 `AIRFLOW_*` 在部署時帶入，不會打包進 image
@@ -612,6 +616,40 @@ swarm 版的 MySQL container 名稱帶亂數，第 1 步的 `tk3c_mysql` 改成 
 
 重複執行腳本不會產生重複的查詢或儀表板，同名的會直接更新（在 Redash 網頁上手動改過的查詢內容會被覆蓋）。
 
+## 追蹤清單
+
+前 20 名排行榜只抓得到各平台當天最熱賣的商品，不同平台重疊的型號很少，跨平台比價的圖常常沒資料。追蹤清單固定一批熱門型號，每天到每個平台用型號搜尋，同一個型號就能天天比價。
+
+| 項目 | 說明 |
+|---|---|
+| 清單 | `watchlist`（分類、廠牌、型號、啟用），初始 85 個：2026-10-10～11-09 在兩個以上平台出現過的型號（`database/migrations/006_add_watchlist.sql`） |
+| 結果 | `watch_price_daily`：每天、每平台、每型號一筆最低價，`符合筆數` 為找到幾個賣場；同一天重跑只保留最後一次 |
+| 平台 | 燦坤、PChome、Yahoo；momo 擋程式存取，不爬 |
+| 排程 | 接在各平台排行榜爬蟲後面（`app/producer.py`），同一個網站依序跑，不會同時送太多請求 |
+| 型號比對 | 去掉 `-`、空白、括號後比對：PChome 看商品名稱、Yahoo 看型號欄位與名稱、燦坤搜尋結果沒有型號，進前 3 個商品頁看「產品型號」；7 碼以上的型號允許 3 碼以內的顏色後綴（`NR-B171TV` ↔ `NR-B171TV-S1`） |
+| 排除 | 分類要符合（PChome 分類代碼、Yahoo 分類路徑，和排行榜相同），名稱有該分類的配件關鍵字、「適用」「相容」，或福利品、盒損、展示機、二手、整新的不算 |
+
+```bash
+# 建立資料表與初始清單（VM 上，只需一次）
+docker exec -i $(docker ps -q -f name=tk3c_mysql) sh -c 'mysql --default-character-set=utf8mb4 -uroot -p"$MYSQL_ROOT_PASSWORD"' < database/migrations/006_add_watchlist.sql
+
+# 手動執行某個平台（VM 上，不經過 RabbitMQ）
+docker run --rm --network tk3c_attachable_network --env-file .env -e DB_HOST=tk3c_mysql -e DB_PORT=3306 -e TZ=Asia/Taipei \
+  pennyliu32/tk3c-price-tracker:<版本> python -m app.watchlist pchome   # tk3c / pchome / yahoo，--limit 5 只跑前 5 個
+
+# 單一型號測試（不寫資料庫）
+python -m app.special_topic3C.watch_search pchome 冰箱 HRE-B1261U
+```
+
+```sql
+-- 新增 / 停用追蹤型號（型號寫法和 goods_daily.型號 相同：大寫、去掉括號）
+INSERT INTO watchlist (分類, 廠牌, 型號) VALUES ('掃地機器人', 'Roborock 石頭科技', 'Q8MAX');
+UPDATE watchlist SET 啟用 = FALSE WHERE 型號 = 'SR-C07';
+
+-- 今天各型號在各平台的最低價
+SELECT 分類, 型號, 平台, 售價, 符合筆數 FROM watch_price_daily WHERE 抓取日期 = CURDATE() ORDER BY 分類, 型號, 售價;
+```
+
 ## 與 momo 四類資料整合
 
 momo 的冰箱、電視、洗衣機、掃地機器人由獨立的 momo 爬蟲寫入同一台 MySQL 的 `mydb.momo_goods_daily`。本專案以這張表的中文欄位格式為準，另外產生一張同格式的 `goods_daily`：
@@ -669,11 +707,12 @@ ORDER BY 型號, 售價;
 - [x] 部署到 GCP Compute Engine VM，24 小時自動排程爬取
 - [x] 整合 momo 四類資料（view `all_goods_daily`），並在 view 裡修正分類、排除配件
 - [x] 使用 Superset 建立「家電比價」dashboard（每日比價、長期分析兩個分頁）
+- [x] 追蹤清單：85 個熱門型號每天到燦坤、PChome、Yahoo 用型號搜尋
 - [x] BigQuery 資料倉儲（組員負責）：GCS raw → fact / dim → DataMart，Airflow 每日同步
 
 ## 未來規劃
 
-- 追蹤清單：固定 50～100 個熱門型號，每天到各平台用型號搜尋，提高可跨平台比價的商品數
+- 追蹤清單同步到 BigQuery，並在 Superset 加上追蹤型號的跨平台比價圖
 - Superset 用 BigQuery DataMart 建圖表、Looker Studio 報表
 - momo 自 2026/11/08 起擋下程式存取（403），目前保留歷史資料、不繞過防護
 - PChome 商品名稱沒有括號的型號抓取規則（目前約一半抓不到型號）

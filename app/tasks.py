@@ -10,6 +10,7 @@ from app.special_topic3C.washer_search import run_washer_crawler
 from app.special_topic3C.pchome_search import run_pchome_crawler
 from app.special_topic3C.momo_search import run_momo_crawler
 from app.special_topic3C.yahoo_search import run_yahoo_crawler
+from app.watchlist import run_watchlist
 
 MAX_RETRIES = 3
 RETRY_DELAY = 300  # 失敗後隔 5 分鐘重試
@@ -120,3 +121,32 @@ def crawl_yahoo_robotvacuum(self):
 @app.task(name="crawl_yahoo_washer", bind=True, max_retries=MAX_RETRIES)
 def crawl_yahoo_washer(self):
     return run_crawl_task(self, "洗衣機", lambda: run_yahoo_crawler("洗衣機"), "yahoo")
+
+
+# 追蹤清單：固定型號到各平台搜尋（app/watchlist.py），接在各平台排行榜後面跑
+def run_watch_task(task, platform):
+    try:
+        total, saved, failed, message = run_watchlist(platform)
+    except pymysql.err.OperationalError as e:
+        print(f"⚠️ {platform} 追蹤清單連不上資料庫，{RETRY_DELAY} 秒後重試（第 {task.request.retries + 1} 次）：{e}")
+        raise task.retry(exc=e, countdown=RETRY_DELAY)
+    # 一筆都沒找到通常是網站暫時連不上，整批重跑；部分型號沒找到是正常的（該平台沒賣）
+    if not saved and task.request.retries < task.max_retries:
+        print(f"⚠️ {message}，{RETRY_DELAY} 秒後重試（第 {task.request.retries + 1} 次）")
+        raise task.retry(countdown=RETRY_DELAY)
+    return message
+
+
+@app.task(name="crawl_watch_tk3c", bind=True, max_retries=MAX_RETRIES)
+def crawl_watch_tk3c(self):
+    return run_watch_task(self, "tk3c")
+
+
+@app.task(name="crawl_watch_pchome", bind=True, max_retries=MAX_RETRIES)
+def crawl_watch_pchome(self):
+    return run_watch_task(self, "pchome")
+
+
+@app.task(name="crawl_watch_yahoo", bind=True, max_retries=MAX_RETRIES)
+def crawl_watch_yahoo(self):
+    return run_watch_task(self, "yahoo")
