@@ -482,48 +482,7 @@ GCP 預設不開放這些 port，要在「VPC 網路 → 防火牆 → 建立虛
 
 ## BigQuery 資料倉儲
 
-MySQL 負責每天的爬蟲寫入，BigQuery 負責分析：每天 21:30 由 Airflow 的 `tk3c_bigquery_sync` DAG 把 `all_goods_daily` 同步到 BigQuery，依課程的分層整理成 Raw → Fact / Dim → DataMart。
-
-```
-MySQL all_goods_daily（唯讀帳號 superset_reader，密碼存在 Secret Manager）
-  │  app/bigquery_sync.py：每天一個 JSON Lines 檔
-  ▼
-GCS  gs://tk3c-price-raw-fb94c850/raw/all_goods_daily/dt=YYYY-MM-DD/data.jsonl
-  ▼
-BigQuery dataset tk3c_dw（US）
-  raw_goods_daily              外部資料表，直接讀 GCS（dt 為 Hive 分區）
-  fact_price_daily             每日價格，依 crawl_date 分區、依 platform/category 叢集
-  dim_platform / dim_product   平台（顯示名稱、配色）與商品維度
-  mart_cross_platform_compare  同型號跨平台比價
-  mart_price_drop              降價排行（各平台最新一次 vs 上一次）
-  mart_price_change_stats      價格變動統計（觀察 7 天以上）
-  mart_double11                雙 11 價格檢驗（11/11 vs 前 30 天）
-```
-
-| 項目 | 設定 |
-|---|---|
-| 程式 | `app/bigquery_sync.py`，SQL 在 `bigquery/sql/01`～`05`（依序執行） |
-| 去重 | BigQuery 沒有 Primary Key：同步時先刪除那段日期的分區再寫入，並以 `QUALIFY ROW_NUMBER()` 保留同日、同平台、同分類、同商品一筆；同一天重跑不會重複 |
-| 權限 | VM 使用專用 service account `tk3c-pipeline`（scope `cloud-platform`），不下載金鑰；只有：專案的 BigQuery Job User、Log Writer、Monitoring Metric Writer，bucket 的 Storage Object Admin，dataset `tk3c_dw` 的 Data Editor，secret `tk3c-mysql-reader-password` 的 Secret Accessor |
-| 密碼 | Secret Manager `tk3c-mysql-reader-password`（= VM `.env` 的 `SUPERSET_DB_PASSWORD`）；DAG 與 image 裡都沒有密碼 |
-| 費用 | 資料量每天約 300 筆，一次完整同步處理約 5 MB，在 BigQuery 免費額度內 |
-
-```bash
-# 手動同步某一天 / 補歷史資料（VM 上）
-docker run --rm --network tk3c_attachable_network -e TZ=Asia/Taipei pennyliu32/tk3c-price-tracker:<版本> \
-  python -m app.bigquery_sync --date 2026-11-08
-docker run --rm --network tk3c_attachable_network -e TZ=Asia/Taipei pennyliu32/tk3c-price-tracker:<版本> \
-  python -m app.bigquery_sync --start 2026-09-12 --end 2026-11-08
-
-# 第一次設定（GCP，已完成）
-gcloud iam service-accounts create tk3c-pipeline
-gcloud storage buckets create gs://tk3c-price-raw-fb94c850 --location us-east1 --uniform-bucket-level-access
-bq --location=US mk --dataset <project>:tk3c_dw
-gcloud secrets create tk3c-mysql-reader-password --replication-policy=automatic
-# VM 換成 tk3c-pipeline（要先停機）
-gcloud compute instances set-service-account consumer-electronics-price-search-engine --zone us-east1-c \
-  --service-account tk3c-pipeline@<project>.iam.gserviceaccount.com --scopes cloud-platform
-```
+由組員負責：每天 21:30 由 Airflow 的 `tk3c_bigquery_sync` DAG 把 `all_goods_daily` 同步到 GCS 與 BigQuery（Raw → Fact / Dim → DataMart），程式在 `app/bigquery_sync.py`、`bigquery/sql/`。架構圖、分層設計、權限與操作方式見組員 repo 的說明。
 
 ## Superset 視覺化
 
@@ -710,7 +669,7 @@ ORDER BY 型號, 售價;
 - [x] 部署到 GCP Compute Engine VM，24 小時自動排程爬取
 - [x] 整合 momo 四類資料（view `all_goods_daily`），並在 view 裡修正分類、排除配件
 - [x] 使用 Superset 建立「家電比價」dashboard（每日比價、長期分析兩個分頁）
-- [x] 建立 BigQuery 資料倉儲：GCS raw → fact / dim → DataMart，Airflow 每日同步，密碼存在 Secret Manager
+- [x] BigQuery 資料倉儲（組員負責）：GCS raw → fact / dim → DataMart，Airflow 每日同步
 
 ## 未來規劃
 
