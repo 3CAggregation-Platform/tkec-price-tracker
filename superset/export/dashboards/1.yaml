@@ -142,6 +142,7 @@ position:
     - ROW-Hf-aimwvl_E9soMyBw-8s
     - TABS-KaEnXA1HgnhHSPhSh_au8
     - ROW-Mh_fLhViIFJ1J-0zSclJE
+    - ROW-N-CRXCKX6G
     id: GRID_ID
     parents:
     - ROOT_ID
@@ -282,6 +283,31 @@ position:
     - ROOT_ID
     - GRID_ID
     type: TABS
+  ROW-N-CRXCKX6G:
+    children:
+    - CHART-O4TEN2KH
+    id: ROW-N-CRXCKX6G
+    meta:
+      '0': ROOT_ID
+      background: BACKGROUND_TRANSPARENT
+    type: ROW
+    parents:
+    - ROOT_ID
+    - GRID_ID
+  CHART-O4TEN2KH:
+    children: []
+    id: CHART-O4TEN2KH
+    meta:
+      chartId: 9
+      height: 50
+      sliceName: "\u964D\u5E45\u6392\u884C\uFF08BigQuery\uFF09"
+      uuid: 5744de85-4d7c-4246-837d-b26549f96c1e
+      width: 4
+    type: CHART
+    parents:
+    - ROOT_ID
+    - GRID_ID
+    - ROW-N-CRXCKX6G
 metadata:
   label_colors:
     "\u71E6\u5764": '#D2621A'
@@ -452,14 +478,19 @@ metadata:
         name: "\u5206\u985E"
       datasetUuid: f0bd2785-a100-4018-be16-a981515cef77
     type: NATIVE_FILTER
-  - cascadeParentIds:
-    - NATIVE_FILTER-tvmsHMDXhF1-8sAWNf8by
+  - id: NATIVE_FILTER-tUXKcA5yIMy2aXvuKcEsC
     controlValues:
-      defaultToFirstItem: false
       enableEmptyFilter: true
-      inverseSelection: false
+      defaultToFirstItem: false
       multiSelect: false
       searchAllOptions: false
+      inverseSelection: false
+    name: "\u578B\u865F"
+    filterType: filter_select
+    targets:
+    - column:
+        name: "\u578B\u865F"
+      datasetUuid: f0bd2785-a100-4018-be16-a981515cef77
     defaultDataMask:
       extraFormData:
         filters:
@@ -473,26 +504,16 @@ metadata:
         validateStatus: false
         value:
         - AF-6071W
-    description: ''
-    filterType: filter_select
-    id: NATIVE_FILTER-tUXKcA5yIMy2aXvuKcEsC
-    name: "\u578B\u865F"
+    cascadeParentIds:
+    - NATIVE_FILTER-tvmsHMDXhF1-8sAWNf8by
     scope:
+      rootPath:
+      - TAB-hBUIFraBC9Q8i7OyJrvDR
       excluded:
       - 1
       - 2
       - 3
       - 5
-      - 6
-      - 7
-      rootPath:
-      - ROOT_ID
-    targets:
-    - column:
-        name: "\u578B\u865F"
-      datasetUuid: f0bd2785-a100-4018-be16-a981515cef77
     type: NATIVE_FILTER
-    chartsInScope:
-    - 4
-    tabsInScope: []
+    description: ''
 version: 1.0.0

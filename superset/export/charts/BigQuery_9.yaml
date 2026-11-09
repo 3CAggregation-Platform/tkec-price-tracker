@@ -1,0 +1,123 @@
+slice_name: "\u964D\u5E45\u6392\u884C\uFF08BigQuery\uFF09"
+description: null
+certified_by: null
+certification_details: null
+viz_type: table
+params:
+  datasource: 7__table
+  viz_type: table
+  slice_id: 9
+  query_mode: raw
+  groupby: []
+  temporal_columns_lookup:
+    prev_date: true
+    crawl_date: true
+  metrics: []
+  all_columns:
+  - expressionType: SQL
+    label: "\u5E73\u53F0"
+    sqlExpression: platform_name
+  - expressionType: SQL
+    label: "\u5206\u985E"
+    sqlExpression: category
+  - expressionType: SQL
+    label: "\u5546\u54C1"
+    sqlExpression: product_name
+  - expressionType: SQL
+    label: "\u539F\u50F9"
+    sqlExpression: prev_price
+  - expressionType: SQL
+    label: "\u73FE\u50F9"
+    sqlExpression: price
+  - expressionType: SQL
+    label: "\u964D\u50F9"
+    sqlExpression: drop_amount
+  - expressionType: SQL
+    label: "\u964D\u5E45"
+    sqlExpression: drop_ratio
+  percent_metrics: []
+  adhoc_filters:
+  - clause: WHERE
+    comparator: '0.03'
+    datasourceWarning: false
+    expressionType: SIMPLE
+    filterOptionName: filter_he9gxmprzbc_983xry89cz
+    isExtra: false
+    isNew: false
+    operator: '>='
+    operatorId: GREATER_THAN_OR_EQUAL
+    sqlExpression: null
+    subject: drop_ratio
+  - clause: WHERE
+    comparator: No filter
+    expressionType: SIMPLE
+    operator: TEMPORAL_RANGE
+    subject: prev_date
+  order_by_cols:
+  - '["drop_ratio", false]'
+  order_desc: true
+  row_limit: 50
+  server_page_length: 10
+  table_timestamp_format: smart_date
+  allow_render_html: true
+  column_config:
+    "\u539F\u50F9":
+      d3NumberFormat: ',d'
+    "\u73FE\u50F9":
+      d3NumberFormat: ',d'
+    "\u964D\u50F9":
+      d3NumberFormat: ',d'
+      showCellBars: true
+    "\u964D\u5E45":
+      d3NumberFormat: ',.1%'
+      showCellBars: true
+  show_cell_bars: false
+  color_pn: true
+  comparison_color_scheme: Green
+  conditional_formatting: []
+  comparison_type: values
+  extra_form_data: {}
+  dashboards:
+  - 1
+query_context: "{\"datasource\":{\"id\":7,\"type\":\"table\"},\"force\":false,\"queries\"\
+  :[{\"filters\":[{\"col\":\"drop_ratio\",\"op\":\">=\",\"val\":\"0.03\"},{\"col\"\
+  :\"prev_date\",\"op\":\"TEMPORAL_RANGE\",\"val\":\"No filter\"}],\"extras\":{\"\
+  having\":\"\",\"where\":\"\"},\"applied_time_extras\":{},\"columns\":[{\"expressionType\"\
+  :\"SQL\",\"label\":\"\u5E73\u53F0\",\"sqlExpression\":\"platform_name\"},{\"expressionType\"\
+  :\"SQL\",\"label\":\"\u5206\u985E\",\"sqlExpression\":\"category\"},{\"expressionType\"\
+  :\"SQL\",\"label\":\"\u5546\u54C1\",\"sqlExpression\":\"product_name\"},{\"expressionType\"\
+  :\"SQL\",\"label\":\"\u539F\u50F9\",\"sqlExpression\":\"prev_price\"},{\"expressionType\"\
+  :\"SQL\",\"label\":\"\u73FE\u50F9\",\"sqlExpression\":\"price\"},{\"expressionType\"\
+  :\"SQL\",\"label\":\"\u964D\u50F9\",\"sqlExpression\":\"drop_amount\"},{\"expressionType\"\
+  :\"SQL\",\"label\":\"\u964D\u5E45\",\"sqlExpression\":\"drop_ratio\"}],\"orderby\"\
+  :[[\"drop_ratio\",false]],\"annotation_layers\":[],\"row_limit\":50,\"series_limit\"\
+  :0,\"order_desc\":true,\"url_params\":{},\"custom_params\":{},\"custom_form_data\"\
+  :{},\"post_processing\":[],\"time_offsets\":[]}],\"form_data\":{\"datasource\":\"\
+  7__table\",\"viz_type\":\"table\",\"slice_id\":9,\"query_mode\":\"raw\",\"groupby\"\
+  :[],\"temporal_columns_lookup\":{\"prev_date\":true,\"crawl_date\":true},\"metrics\"\
+  :[],\"all_columns\":[{\"expressionType\":\"SQL\",\"label\":\"\u5E73\u53F0\",\"sqlExpression\"\
+  :\"platform_name\"},{\"expressionType\":\"SQL\",\"label\":\"\u5206\u985E\",\"sqlExpression\"\
+  :\"category\"},{\"expressionType\":\"SQL\",\"label\":\"\u5546\u54C1\",\"sqlExpression\"\
+  :\"product_name\"},{\"expressionType\":\"SQL\",\"label\":\"\u539F\u50F9\",\"sqlExpression\"\
+  :\"prev_price\"},{\"expressionType\":\"SQL\",\"label\":\"\u73FE\u50F9\",\"sqlExpression\"\
+  :\"price\"},{\"expressionType\":\"SQL\",\"label\":\"\u964D\u50F9\",\"sqlExpression\"\
+  :\"drop_amount\"},{\"expressionType\":\"SQL\",\"label\":\"\u964D\u5E45\",\"sqlExpression\"\
+  :\"drop_ratio\"}],\"percent_metrics\":[],\"adhoc_filters\":[{\"clause\":\"WHERE\"\
+  ,\"comparator\":\"0.03\",\"datasourceWarning\":false,\"expressionType\":\"SIMPLE\"\
+  ,\"filterOptionName\":\"filter_he9gxmprzbc_983xry89cz\",\"isExtra\":false,\"isNew\"\
+  :false,\"operator\":\">=\",\"operatorId\":\"GREATER_THAN_OR_EQUAL\",\"sqlExpression\"\
+  :null,\"subject\":\"drop_ratio\"},{\"clause\":\"WHERE\",\"comparator\":\"No filter\"\
+  ,\"expressionType\":\"SIMPLE\",\"operator\":\"TEMPORAL_RANGE\",\"subject\":\"prev_date\"\
+  }],\"order_by_cols\":[\"[\\\"drop_ratio\\\", false]\"],\"order_desc\":true,\"row_limit\"\
+  :50,\"server_page_length\":10,\"table_timestamp_format\":\"smart_date\",\"allow_render_html\"\
+  :true,\"column_config\":{\"\u539F\u50F9\":{\"d3NumberFormat\":\",d\"},\"\u73FE\u50F9\
+  \":{\"d3NumberFormat\":\",d\"},\"\u964D\u50F9\":{\"d3NumberFormat\":\",d\",\"showCellBars\"\
+  :true},\"\u964D\u5E45\":{\"d3NumberFormat\":\",.1%\",\"showCellBars\":true}},\"\
+  show_cell_bars\":false,\"color_pn\":true,\"comparison_color_scheme\":\"Green\",\"\
+  conditional_formatting\":[],\"comparison_type\":\"values\",\"extra_form_data\":{},\"\
+  dashboards\":[1],\"force\":false,\"result_format\":\"json\",\"result_type\":\"full\"\
+  ,\"include_time\":false},\"result_format\":\"json\",\"result_type\":\"full\"}"
+cache_timeout: null
+uuid: 5744de85-4d7c-4246-837d-b26549f96c1e
+version: 1.0.0
+dataset_uuid: 226b1708-e23d-46e4-a3e1-da6c9d5fedcc
