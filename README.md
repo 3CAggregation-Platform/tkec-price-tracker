@@ -43,7 +43,7 @@
 ```
 tk3c-price-tracker/
 ├── app/                           # 所有 Python 程式
-│   ├── main.py                    # FastAPI 查詢 API
+│   ├── main.py                    # FastAPI 查詢 API（商品、價格歷史、追蹤清單比價）
 │   ├── celery_app.py              # Celery 設定（beat 排程在 swarm 已停用，改由 Airflow 負責）
 │   ├── tasks.py                   # Celery 爬蟲任務（含自動重試）
 │   ├── producer.py                # 把 8 個爬蟲任務送進 RabbitMQ，給 Airflow DockerOperator 呼叫
@@ -72,7 +72,7 @@ tk3c-price-tracker/
 │   ├── dags/tk3c_bigquery_sync.py # 每日 BigQuery 同步 DAG（21:30）
 │   ├── Dockerfile                 # 以課程的 tibame_dataflow image 為底，加入本專題的 DAG
 │   └── docker-compose-airflow.yml # Airflow swarm stack
-├── bigquery/sql/                  # BigQuery 分層：01 raw 外部表、02 fact、03 載入去重、04 dim、05 mart
+├── bigquery/sql/                  # BigQuery 分層：01 raw 外部表、02 fact、03 載入去重、04 dim、05 mart、06～08 追蹤清單
 ├── superset/
 │   ├── Dockerfile                 # 官方 Superset 5.0 image 加裝 MySQL（pymysql）與 BigQuery（sqlalchemy-bigquery）driver
 │   ├── superset_config.py         # SECRET_KEY、SQLite metadata、繁體中文介面
@@ -486,7 +486,7 @@ GCP 預設不開放這些 port，要在「VPC 網路 → 防火牆 → 建立虛
 
 ## BigQuery 資料倉儲
 
-由組員負責：每天 21:30 由 Airflow 的 `tk3c_bigquery_sync` DAG 把 `all_goods_daily` 同步到 GCS 與 BigQuery（Raw → Fact / Dim → DataMart），程式在 `app/bigquery_sync.py`、`bigquery/sql/`。架構圖、分層設計、權限與操作方式見組員 repo 的說明。
+由組員負責：每天 21:30 由 Airflow 的 `tk3c_bigquery_sync` DAG 把 `all_goods_daily` 與追蹤清單 `watch_price_daily` 同步到 GCS 與 BigQuery（Raw → Fact / Dim → DataMart），程式在 `app/bigquery_sync.py`、`bigquery/sql/`。架構圖、分層設計、權限與操作方式見組員 repo 的說明。
 
 ## Superset 視覺化
 
@@ -629,6 +629,9 @@ swarm 版的 MySQL container 名稱帶亂數，第 1 步的 `tk3c_mysql` 改成 
 | 排程 | 接在各平台排行榜爬蟲後面（`app/producer.py`），同一個網站依序跑，不會同時送太多請求 |
 | 型號比對 | 去掉 `-`、空白、括號後比對：PChome 看商品名稱、Yahoo 看型號欄位與名稱、燦坤搜尋結果沒有型號，進前 3 個商品頁看「產品型號」；7 碼以上的型號允許 3 碼以內的顏色後綴（`NR-B171TV` ↔ `NR-B171TV-S1`） |
 | 排除 | 分類要符合（PChome 分類代碼、Yahoo 分類路徑，和排行榜相同），名稱有該分類的配件關鍵字、「適用」「相容」，或福利品、盒損、展示機、二手、整新的不算 |
+| API | `GET /watchlist`（清單，`?category=冰箱`）、`GET /watchlist/compare`（最新一天各型號三平台價格、最便宜平台、價差比例，`?category=`、`?date=`、`?min_platforms=3`）、`GET /watchlist/{型號}/history`（每天各平台價格），見 `/docs` |
+| BigQuery | 每天 21:30 一起同步：GCS `raw/watch_price_daily/` → `raw_watch_price_daily` → `fact_watch_price_daily` → `mart_watch_compare`（`bigquery/sql/06`～`08`） |
+| 圖表 | Superset「追蹤型號跨平台比價（今天）」（每日比價分頁） |
 
 ```bash
 # 建立資料表與初始清單（VM 上，只需一次）
@@ -708,12 +711,12 @@ ORDER BY 型號, 售價;
 - [x] 部署到 GCP Compute Engine VM，24 小時自動排程爬取
 - [x] 整合 momo 四類資料（view `all_goods_daily`），並在 view 裡修正分類、排除配件
 - [x] 使用 Superset 建立「家電比價」dashboard（每日比價、長期分析兩個分頁）
-- [x] 追蹤清單：85 個熱門型號每天到燦坤、PChome、Yahoo 用型號搜尋
+- [x] 追蹤清單：85 個熱門型號每天到燦坤、PChome、Yahoo 用型號搜尋，提供 API、同步到 BigQuery
+- [x] Looker Studio 報表「家電價格總覽」（BigQuery fact / mart）
 - [x] BigQuery 資料倉儲（組員負責）：GCS raw → fact / dim → DataMart，Airflow 每日同步
 
 ## 未來規劃
 
-- 追蹤清單同步到 BigQuery，並在 Superset 加上追蹤型號的跨平台比價圖
 - Superset 用 BigQuery DataMart 建圖表、Looker Studio 報表
 - momo 自 2026/11/08 起擋下程式存取（403），目前保留歷史資料、不繞過防護
 - PChome 商品名稱沒有括號的型號抓取規則（目前約一半抓不到型號）

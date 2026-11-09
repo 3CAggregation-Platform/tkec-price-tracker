@@ -11,6 +11,7 @@ MySQL → GCS → BigQuery 每日同步（Raw → Fact / Dim → DataMart）
 2. Raw：BigQuery 外部資料表 raw_goods_daily 直接讀 GCS 的檔案
 3. Fact：刪除 fact_price_daily 這段日期的分區，再從 raw 寫入並去重（BigQuery 沒有 Primary Key）
 4. Dim / DataMart：重建 dim_platform、dim_product 與 mart_* 表
+5. 追蹤清單：watch_price_daily 同樣走 GCS → raw_watch_price_daily → fact_watch_price_daily → mart_watch_compare
 
 在 GCE VM 上用 VM 的 service account（tk3c-pipeline）存取 GCS、BigQuery、Secret Manager，
 不需要下載金鑰；MySQL 用唯讀帳號，密碼從 Secret Manager 讀取。
@@ -32,8 +33,6 @@ TAIPEI = datetime.timezone(datetime.timedelta(hours=8))
 
 DATASET = os.getenv("BQ_DATASET", "tk3c_dw")
 BUCKET = os.getenv("GCS_BUCKET", "tk3c-price-raw-fb94c850")
-RAW_PREFIX = "raw/all_goods_daily"
-
 # all_goods_daily 的中文欄位 → 資料倉儲的英文欄位
 COLUMNS = {
     "抓取日期": "crawl_date",
@@ -49,6 +48,27 @@ COLUMNS = {
     "評價數": "review_count",
     "排名": "sales_rank",
     "連結": "url",
+}
+
+# 追蹤清單 watch_price_daily 的中文欄位 → 英文欄位
+WATCH_COLUMNS = {
+    "抓取日期": "crawl_date",
+    "平台": "platform",
+    "分類": "category",
+    "型號": "model",
+    "商品編號": "product_id",
+    "廠牌": "brand",
+    "商品名稱": "product_name",
+    "售價": "price",
+    "原價": "list_price",
+    "符合筆數": "match_count",
+    "連結": "url",
+}
+
+# 來源資料表 → (欄位對照, GCS 路徑前綴)
+SOURCES = {
+    "all_goods_daily": (COLUMNS, "raw/all_goods_daily"),
+    "watch_price_daily": (WATCH_COLUMNS, "raw/watch_price_daily"),
 }
 
 
@@ -83,24 +103,25 @@ def to_json_value(value):
     return value
 
 
-def extract_to_gcs(start, end):
-    """把每天的資料上傳成一個 JSON Lines 檔，回傳 {日期: 筆數}"""
-    select = ", ".join(f"`{zh}`" for zh in COLUMNS)
+def extract_to_gcs(start, end, table="all_goods_daily"):
+    """把 MySQL 資料表每天的資料上傳成一個 JSON Lines 檔，回傳 {日期: 筆數}"""
+    columns, prefix = SOURCES[table]
+    select = ", ".join(f"`{zh}`" for zh in columns)
     with mysql_connection() as conn, conn.cursor() as cursor:
         cursor.execute(
-            f"SELECT {select} FROM all_goods_daily WHERE 抓取日期 BETWEEN %s AND %s ORDER BY 抓取日期",
+            f"SELECT {select} FROM {table} WHERE 抓取日期 BETWEEN %s AND %s ORDER BY 抓取日期",
             (start, end),
         )
         rows = cursor.fetchall()
 
     by_date = {}
     for row in rows:
-        record = {en: to_json_value(row[zh]) for zh, en in COLUMNS.items()}
+        record = {en: to_json_value(row[zh]) for zh, en in columns.items()}
         by_date.setdefault(record["crawl_date"], []).append(json.dumps(record, ensure_ascii=False))
 
     bucket = storage.Client().bucket(BUCKET)
     for day, lines in sorted(by_date.items()):
-        blob = bucket.blob(f"{RAW_PREFIX}/dt={day}/data.jsonl")
+        blob = bucket.blob(f"{prefix}/dt={day}/data.jsonl")
         blob.upload_from_string("\n".join(lines) + "\n", content_type="application/x-ndjson")
         print(f"  GCS gs://{BUCKET}/{blob.name}：{len(lines)} 筆")
     return {day: len(lines) for day, lines in by_date.items()}
@@ -116,6 +137,27 @@ def run_sql(client, filename, params=None):
     print(f"  BigQuery {filename} 完成（處理 {job.total_bytes_processed or 0:,} bytes）")
 
 
+def date_params(start, end):
+    return [
+        bigquery.ScalarQueryParameter("start_date", "DATE", start),
+        bigquery.ScalarQueryParameter("end_date", "DATE", end),
+    ]
+
+
+def sync_watchlist(client, start, end):
+    """追蹤清單：watch_price_daily → GCS → raw / fact → mart_watch_compare；這段日期沒有資料就略過"""
+    print(f"----- 追蹤清單 {start} ~ {end} -----")
+    counts = extract_to_gcs(start, end, "watch_price_daily")
+    if not counts:
+        print("  MySQL watch_price_daily 沒有這段日期的資料，略過")
+        return 0
+    run_sql(client, "06_watch_raw.sql")
+    run_sql(client, "07_watch_load.sql", date_params(start, end))
+    run_sql(client, "08_watch_mart.sql")
+    print(f"  追蹤清單 MySQL {sum(counts.values())} 筆（{len(counts)} 天）")
+    return sum(counts.values())
+
+
 def sync(start, end):
     print(f"===== BigQuery 同步 {start} ~ {end} =====")
     counts = extract_to_gcs(start, end)
@@ -126,12 +168,10 @@ def sync(start, end):
     client = bigquery.Client()
     run_sql(client, "01_raw_goods_daily.sql")
     run_sql(client, "02_fact_price_daily.sql")
-    run_sql(client, "03_load_fact.sql", [
-        bigquery.ScalarQueryParameter("start_date", "DATE", start),
-        bigquery.ScalarQueryParameter("end_date", "DATE", end),
-    ])
+    run_sql(client, "03_load_fact.sql", date_params(start, end))
     run_sql(client, "04_dim.sql")
     run_sql(client, "05_marts.sql")
+    sync_watchlist(client, start, end)  # mart_watch_compare 要用 04 建好的 dim_platform
 
     fact = client.query(
         f"SELECT COUNT(*) AS n FROM `{client.project}.{DATASET}.fact_price_daily` "
