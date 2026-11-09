@@ -1,6 +1,8 @@
 slice_name: "\u8FFD\u8E64\u578B\u865F\u8DE8\u5E73\u53F0\u6BD4\u50F9\uFF08\u4ECA\u5929\
   \uFF09"
-description: null
+description: "\u71E6\u5764\u3001PChome\u3001Yahoo \u4E09\u5E73\u53F0\u6BD4\u50F9\uFF1B\
+  momo \u81EA 2026/11/08 \u8D77\u5C01\u9396\u7A0B\u5F0F\u5B58\u53D6\uFF0C\u4E0D\u5217\
+  \u5165\u3002"
 certified_by: null
 certification_details: null
 viz_type: table
@@ -39,13 +41,14 @@ params:
     "\u50F9\u5DEE":
       d3NumberFormat: ',d'
       showCellBars: true
-    "\u71E6\u5764":
-      d3NumberFormat: ',d'
     "\u50F9\u5DEE\u7387":
       d3NumberFormat: ',.1%'
       showCellBars: true
+    "\u71E6\u5764":
+      d3NumberFormat: ',d'
   show_cell_bars: false
   color_pn: true
+  comparison_color_scheme: Green
   conditional_formatting: []
   extra_form_data: {}
   dashboards:
@@ -67,12 +70,12 @@ query_context: "{\"datasource\":{\"id\":8,\"type\":\"table\"},\"force\":false,\"
   :[\"[\\\"\\\\u50f9\\\\u5dee\\\\u6bd4\\\\u4f8b\\\", false]\"],\"row_limit\":100,\"\
   table_timestamp_format\":\"smart_date\",\"allow_render_html\":true,\"column_config\"\
   :{\"PChome\":{\"d3NumberFormat\":\",d\"},\"Yahoo\":{\"d3NumberFormat\":\",d\"},\"\
-  \u50F9\u5DEE\":{\"d3NumberFormat\":\",d\",\"showCellBars\":true},\"\u71E6\u5764\"\
-  :{\"d3NumberFormat\":\",d\"},\"\u50F9\u5DEE\u7387\":{\"d3NumberFormat\":\",.1%\"\
-  ,\"showCellBars\":true}},\"show_cell_bars\":false,\"color_pn\":true,\"conditional_formatting\"\
-  :[],\"extra_form_data\":{},\"dashboards\":[1],\"force\":false,\"result_format\"\
-  :\"json\",\"result_type\":\"full\",\"include_time\":false},\"result_format\":\"\
-  json\",\"result_type\":\"full\"}"
+  \u50F9\u5DEE\":{\"d3NumberFormat\":\",d\",\"showCellBars\":true},\"\u50F9\u5DEE\u7387\
+  \":{\"d3NumberFormat\":\",.1%\",\"showCellBars\":true},\"\u71E6\u5764\":{\"d3NumberFormat\"\
+  :\",d\"}},\"show_cell_bars\":false,\"color_pn\":true,\"comparison_color_scheme\"\
+  :\"Green\",\"conditional_formatting\":[],\"extra_form_data\":{},\"dashboards\":[1],\"\
+  force\":false,\"result_format\":\"json\",\"result_type\":\"full\",\"include_time\"\
+  :false},\"result_format\":\"json\",\"result_type\":\"full\"}"
 cache_timeout: null
 uuid: 84e32839-5495-40b4-a0fc-da0ef4dde975
 version: 1.0.0
