@@ -549,9 +549,9 @@ bigquery://project-fb94c850-2c44-43c2-afe/tk3c_dw
 
 ### Dashboard 備份與還原
 
-圖表、dataset、dashboard 的設定存在 volume 的 SQLite，另外匯出成 YAML 放在 `superset/export/` 進 git（資料庫密碼會被遮成 `XXXXXXXXXX`）。目前內容：dashboard「家電比價」（分類、型號篩選器；型號只作用在「單一型號各平台價格」）與 7 張圖：
+圖表、dataset、dashboard 的設定存在 volume 的 SQLite，另外匯出成 YAML 放在 `superset/export/` 進 git（資料庫密碼會被遮成 `XXXXXXXXXX`）。目前內容：dashboard「家電比價」（分類、型號篩選器；型號只作用在「單一型號各平台價格」）與 8 張圖：
   - 「每日比價」分頁：四平台平均售價走勢、同型號跨平台比價（最新一天）、四平台售價分布（近 7 天，箱形圖）、單一型號各平台價格、降價排行（最近一次 vs 上一次）
-  - 「長期分析」分頁：價格變動排行（觀察 7 天以上）、雙11價格檢驗（11/11 售價 vs 前 30 天，含「雙11前先漲價」判斷）
+  - 「長期分析」分頁：價格變動排行（觀察 7 天以上）、雙11價格檢驗（11/11 售價 vs 前 30 天，含「雙11前先漲價」判斷）、最便宜平台次數（BigQuery `mart_cross_platform_compare`，同型號在兩個以上平台時哪個平台最便宜）
 
 ```bash
 # 匯出（VM 上）：改完 dashboard 後執行，再把 zip 解開覆蓋 superset/export/ 並 commit
@@ -565,7 +565,7 @@ docker cp /tmp/dashboards.zip $C:/tmp/dashboards.zip
 docker exec $C superset import-dashboards -p /tmp/dashboards.zip -u admin
 ```
 
-匯入後到「Settings → Database Connections」編輯連線，把 URI 裡的 `XXXXXXXXXX` 換回 `SUPERSET_DB_PASSWORD`。
+匯入後到「Settings → Database Connections」編輯 MySQL 連線，把 URI 裡的 `XXXXXXXXXX` 換回 `SUPERSET_DB_PASSWORD`；BigQuery 連線沒有密碼，匯入後直接可用。
 
 ## Redash 視覺化
 

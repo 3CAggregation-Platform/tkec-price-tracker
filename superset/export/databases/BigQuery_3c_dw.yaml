@@ -1,0 +1,17 @@
+database_name: BigQuery 3c_dw
+sqlalchemy_uri: bigquery://project-fb94c850-2c44-43c2-afe/tk3c_dw
+cache_timeout: null
+expose_in_sqllab: true
+allow_run_async: false
+allow_ctas: false
+allow_cvas: false
+allow_dml: false
+allow_file_upload: false
+extra:
+  metadata_params: {}
+  engine_params: {}
+  metadata_cache_timeout: {}
+  schemas_allowed_for_file_upload: []
+impersonate_user: false
+uuid: f984bb01-ec7a-4c48-a298-97c0b72dc5fc
+version: 1.0.0

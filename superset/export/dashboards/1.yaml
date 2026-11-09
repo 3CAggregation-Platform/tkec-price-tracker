@@ -19,7 +19,9 @@ position:
     parents:
     - ROOT_ID
     - GRID_ID
-    - ROW-pFSAcyYwAGWF9iWWZXjgK
+    - TABS-KaEnXA1HgnhHSPhSh_au8
+    - TAB-hBUIFraBC9Q8i7OyJrvDR
+    - ROW-kW704vHGrLj3klk7-xle7
     type: CHART
   CHART-explore-2-1:
     children: []
@@ -34,7 +36,9 @@ position:
     parents:
     - ROOT_ID
     - GRID_ID
-    - ROW-lLiYhX-v4k0gZNkbwWJfX
+    - TABS-KaEnXA1HgnhHSPhSh_au8
+    - TAB-hBUIFraBC9Q8i7OyJrvDR
+    - ROW-kW704vHGrLj3klk7-xle7
     type: CHART
   CHART-explore-3-1:
     children: []
@@ -48,7 +52,9 @@ position:
     parents:
     - ROOT_ID
     - GRID_ID
-    - ROW-ZwO0HBjoPVyu6U2Uf2x76
+    - TABS-KaEnXA1HgnhHSPhSh_au8
+    - TAB-hBUIFraBC9Q8i7OyJrvDR
+    - ROW-pB4_SFVfxHf1ke1QUHCmN
     type: CHART
   CHART-explore-4-1:
     children: []
@@ -62,7 +68,9 @@ position:
     parents:
     - ROOT_ID
     - GRID_ID
-    - ROW-gIhTUx4iUZcKNXui6dkeG
+    - TABS-KaEnXA1HgnhHSPhSh_au8
+    - TAB-hBUIFraBC9Q8i7OyJrvDR
+    - ROW-pB4_SFVfxHf1ke1QUHCmN
     type: CHART
   CHART-explore-5-1:
     children: []
@@ -77,7 +85,9 @@ position:
     parents:
     - ROOT_ID
     - GRID_ID
-    - ROW--mnnZvaNryo-9_ZZ6loQS
+    - TABS-KaEnXA1HgnhHSPhSh_au8
+    - TAB-hBUIFraBC9Q8i7OyJrvDR
+    - ROW-0Sk3To0HPUCoL2ycMf2kv
     type: CHART
   CHART-explore-6-1:
     children: []
@@ -92,7 +102,9 @@ position:
     parents:
     - ROOT_ID
     - GRID_ID
-    - ROW-M_rHHdU8B19oqLGUNer2b
+    - TABS-KaEnXA1HgnhHSPhSh_au8
+    - TAB-Si2ce1Tnv425HhgMyH9VL
+    - ROW-Ofv9kwIAXD-tdOFWZnoDk
     type: CHART
   CHART-explore-7-1:
     children: []
@@ -106,13 +118,30 @@ position:
     parents:
     - ROOT_ID
     - GRID_ID
-    - ROW-M_rHHdU8B19oqLGUNer2b
+    - TABS-KaEnXA1HgnhHSPhSh_au8
+    - TAB-Si2ce1Tnv425HhgMyH9VL
+    - ROW-Ofv9kwIAXD-tdOFWZnoDk
+    type: CHART
+  CHART-explore-8-1:
+    children: []
+    id: CHART-explore-8-1
+    meta:
+      chartId: 8
+      height: 50
+      sliceName: "\u6700\u4FBF\u5B9C\u5E73\u53F0\u6B21\u6578\uFF08BigQuery\uFF09"
+      uuid: b29352cf-226c-4f03-8ae3-7bd31efadcd7
+      width: 6
+    parents:
+    - ROOT_ID
+    - GRID_ID
+    - ROW-Mh_fLhViIFJ1J-0zSclJE
     type: CHART
   DASHBOARD_VERSION_KEY: v2
   GRID_ID:
     children:
     - ROW-Hf-aimwvl_E9soMyBw-8s
     - TABS-KaEnXA1HgnhHSPhSh_au8
+    - ROW-Mh_fLhViIFJ1J-0zSclJE
     id: GRID_ID
     parents:
     - ROOT_ID
@@ -152,6 +181,7 @@ position:
     parents:
     - ROOT_ID
     - GRID_ID
+    - TABS-KaEnXA1HgnhHSPhSh_au8
     - TAB-hBUIFraBC9Q8i7OyJrvDR
     type: ROW
   ROW-Hf-aimwvl_E9soMyBw-8s:
@@ -159,6 +189,17 @@ position:
     - MARKDOWN-P6SCGERNVBUFimGqbK2AV
     id: ROW-Hf-aimwvl_E9soMyBw-8s
     meta:
+      background: BACKGROUND_TRANSPARENT
+    parents:
+    - ROOT_ID
+    - GRID_ID
+    type: ROW
+  ROW-Mh_fLhViIFJ1J-0zSclJE:
+    children:
+    - CHART-explore-8-1
+    id: ROW-Mh_fLhViIFJ1J-0zSclJE
+    meta:
+      '0': ROOT_ID
       background: BACKGROUND_TRANSPARENT
     parents:
     - ROOT_ID
@@ -187,6 +228,7 @@ position:
     parents:
     - ROOT_ID
     - GRID_ID
+    - TABS-KaEnXA1HgnhHSPhSh_au8
     - TAB-hBUIFraBC9Q8i7OyJrvDR
     type: ROW
   ROW-pB4_SFVfxHf1ke1QUHCmN:
@@ -199,6 +241,7 @@ position:
     parents:
     - ROOT_ID
     - GRID_ID
+    - TABS-KaEnXA1HgnhHSPhSh_au8
     - TAB-hBUIFraBC9Q8i7OyJrvDR
     type: ROW
   TAB-Si2ce1Tnv425HhgMyH9VL:
@@ -227,6 +270,7 @@ position:
     parents:
     - ROOT_ID
     - GRID_ID
+    - TABS-KaEnXA1HgnhHSPhSh_au8
     type: TAB
   TABS-KaEnXA1HgnhHSPhSh_au8:
     children:
@@ -256,6 +300,7 @@ metadata:
         - 5
         - 6
         - 7
+        - 8
     '2':
       id: 2
       crossFilters:
@@ -267,6 +312,7 @@ metadata:
         - 5
         - 6
         - 7
+        - 8
     '3':
       id: 3
       crossFilters:
@@ -278,6 +324,7 @@ metadata:
         - 5
         - 6
         - 7
+        - 8
     '4':
       id: 4
       crossFilters:
@@ -289,6 +336,7 @@ metadata:
         - 5
         - 6
         - 7
+        - 8
     '5':
       id: 5
       crossFilters:
@@ -300,6 +348,7 @@ metadata:
         - 4
         - 6
         - 7
+        - 8
     '6':
       id: 6
       crossFilters:
@@ -311,6 +360,7 @@ metadata:
         - 4
         - 5
         - 7
+        - 8
     '7':
       id: 7
       crossFilters:
@@ -322,6 +372,19 @@ metadata:
         - 4
         - 5
         - 6
+        - 8
+    '8':
+      id: 8
+      crossFilters:
+        scope: global
+        chartsInScope:
+        - 1
+        - 2
+        - 3
+        - 4
+        - 5
+        - 6
+        - 7
   global_chart_configuration:
     scope:
       rootPath:
@@ -335,6 +398,7 @@ metadata:
     - 5
     - 6
     - 7
+    - 8
   color_scheme: ''
   refresh_frequency: 0
   color_scheme_domain: []
