@@ -70,7 +70,7 @@ tk3c-price-tracker/
 │   └── docker-compose-airflow.yml # Airflow swarm stack
 ├── bigquery/sql/                  # BigQuery 分層：01 raw 外部表、02 fact、03 載入去重、04 dim、05 mart
 ├── superset/
-│   ├── Dockerfile                 # 官方 Superset 5.0 image 加裝 MySQL driver（pymysql）
+│   ├── Dockerfile                 # 官方 Superset 5.0 image 加裝 MySQL（pymysql）與 BigQuery（sqlalchemy-bigquery）driver
 │   ├── superset_config.py         # SECRET_KEY、SQLite metadata、繁體中文介面
 │   ├── docker-compose-superset.yml # Superset swarm stack（port 8088）
 │   └── export/                    # 匯出的 dashboard、圖表、dataset 設定（YAML）
@@ -527,11 +527,11 @@ gcloud compute instances set-service-account consumer-electronics-price-search-e
 
 ## Superset 視覺化
 
-[Apache Superset](https://superset.apache.org/) 部署在同一台 VM，用唯讀帳號 `superset_reader` 查 `tk3c_price_tracker`，圖表主要用 view `all_goods_daily`（四個平台，含 momo 四類資料）。
+[Apache Superset](https://superset.apache.org/) 部署在同一台 VM，用唯讀帳號 `superset_reader` 查 `tk3c_price_tracker`，圖表主要用 view `all_goods_daily`（四個平台，含 momo 四類資料）；另外連 BigQuery `tk3c_dw` 讀 DataMart。
 
 | 項目 | 設定 |
 |---|---|
-| 版本 | `apache/superset:5.0.0` + pymysql，在 VM 上 build 成 `tk3c-superset:0.0.2`（約 3.7 GB，不推 Docker Hub） |
+| 版本 | `apache/superset:5.0.0` + pymysql + sqlalchemy-bigquery，在 VM 上 build 成 `tk3c-superset:0.0.3`（約 3.7 GB，不推 Docker Hub） |
 | metadata | 帳號、連線、圖表、dashboard 存在 volume `superset_superset_home` 的 SQLite；VM 每日快照會一起備份 |
 | 記憶體 | 上限 1.5 GB，平常約 300 MB |
 | 帳密 | VM `.env` 的 `SUPERSET_SECRET_KEY`、`SUPERSET_ADMIN_PASSWORD`（登入帳號 `admin`）、`SUPERSET_DB_PASSWORD`（`superset_reader` 的密碼） |
@@ -550,7 +550,7 @@ set -a && . ./.env && set +a
 docker exec $(docker ps -q -f name=tk3c_mysql) sh -c "mysql -uroot -p\"\$MYSQL_ROOT_PASSWORD\" -e \"CREATE USER IF NOT EXISTS 'superset_reader'@'%' IDENTIFIED BY '$SUPERSET_DB_PASSWORD'; GRANT SELECT, SHOW VIEW ON tk3c_price_tracker.* TO 'superset_reader'@'%';\""
 
 # 3. build image 並部署（image 很大，build 前確認磁碟還有 5 GB 以上）
-docker build -t tk3c-superset:0.0.2 superset
+docker build -t tk3c-superset:0.0.3 superset
 docker stack deploy -c superset/docker-compose-superset.yml superset
 
 # 4. 初始化 metadata 與管理者帳號
@@ -579,6 +579,14 @@ mysql+pymysql://superset_reader:<SUPERSET_DB_PASSWORD>@tk3c_mysql:3306/tk3c_pric
 ```
 
 `charset=utf8mb4` 一定要加，否則中文欄位和商品名稱會變亂碼。
+
+BigQuery 連線（設定 → 資料庫連線 → + 資料庫 → Google BigQuery → 改用 SQLAlchemy URI）：
+
+```
+bigquery://project-fb94c850-2c44-43c2-afe/tk3c_dw
+```
+
+不用上傳 service account 金鑰：Superset 容器透過 VM 的 metadata server 取得 VM service account `tk3c-pipeline` 的憑證（Application Default Credentials），它有 `tk3c_dw` 的讀寫與 BigQuery Job User 權限。Superset 只拿來查 `mart_*` 表；BigQuery 依掃描量計費，每張 mart 都很小（MB 等級），免費額度內。
 
 ### Dashboard 備份與還原
 
@@ -707,6 +715,6 @@ ORDER BY 型號, 售價;
 ## 未來規劃
 
 - 追蹤清單：固定 50～100 個熱門型號，每天到各平台用型號搜尋，提高可跨平台比價的商品數
-- Superset 連接 BigQuery 的 DataMart、Looker Studio 報表
+- Superset 用 BigQuery DataMart 建圖表、Looker Studio 報表
 - momo 自 2026/11/08 起擋下程式存取（403），目前保留歷史資料、不繞過防護
 - PChome 商品名稱沒有括號的型號抓取規則（目前約一半抓不到型號）
