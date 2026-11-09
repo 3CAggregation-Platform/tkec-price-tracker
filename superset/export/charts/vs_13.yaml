@@ -1,0 +1,98 @@
+slice_name: "\u51B0\u7BB1 \u5BB9\u91CF vs \u552E\u50F9\uFF08\u6700\u65B0\u4E00\u5929\
+  \uFF09"
+description: null
+certified_by: null
+certification_details: null
+viz_type: bubble_v2
+params:
+  datasource: 9__table
+  viz_type: bubble_v2
+  entity: "\u5546\u54C1\u540D\u7A31"
+  series: "\u985E\u578B"
+  x:
+    expressionType: SQL
+    sqlExpression: "MAX(\u898F\u683C)"
+    label: "\u5BB9\u91CF (L)"
+    hasCustomLabel: true
+  y:
+    expressionType: SQL
+    sqlExpression: "AVG(\u552E\u50F9)"
+    label: "\u552E\u50F9"
+    hasCustomLabel: true
+  size:
+    expressionType: SQL
+    sqlExpression: COUNT(*)
+    label: "\u7B46\u6578"
+    hasCustomLabel: true
+  max_bubble_size: '50'
+  row_limit: 1000
+  show_legend: true
+  legendType: scroll
+  x_axis_label: "\u5BB9\u91CF (L)"
+  y_axis_label: "\u552E\u50F9\uFF08\u5143\uFF09"
+  y_axis_format: ',d'
+  xAxisFormat: SMART_NUMBER
+  opacity: 0.7
+  color_scheme: supersetColors
+  adhoc_filters:
+  - expressionType: SIMPLE
+    subject: "\u662F\u5426\u6700\u65B0"
+    operator: ==
+    operatorId: EQUALS
+    comparator: '1'
+    clause: WHERE
+    sqlExpression: null
+    isExtra: false
+    isNew: false
+  - expressionType: SIMPLE
+    subject: "\u5206\u985E"
+    operator: ==
+    operatorId: EQUALS
+    comparator: "\u51B0\u7BB1"
+    clause: WHERE
+    sqlExpression: null
+    isExtra: false
+    isNew: false
+  - expressionType: SQL
+    sqlExpression: "\u898F\u683C IS NOT NULL"
+    clause: WHERE
+    subject: null
+    operator: null
+    comparator: null
+    isExtra: false
+    isNew: false
+query_context: "{\"datasource\":{\"id\":9,\"type\":\"table\"},\"force\":false,\"queries\"\
+  :[{\"filters\":[{\"col\":\"\u662F\u5426\u6700\u65B0\",\"op\":\"==\",\"val\":\"1\"\
+  },{\"col\":\"\u5206\u985E\",\"op\":\"==\",\"val\":\"\u51B0\u7BB1\"}],\"extras\"\
+  :{\"having\":\"\",\"where\":\"(\u898F\u683C IS NOT NULL)\"},\"applied_time_extras\"\
+  :{},\"columns\":[\"\u5546\u54C1\u540D\u7A31\",\"\u985E\u578B\"],\"metrics\":[{\"\
+  expressionType\":\"SQL\",\"hasCustomLabel\":true,\"label\":\"\u7B46\u6578\",\"sqlExpression\"\
+  :\"COUNT(*)\"},{\"expressionType\":\"SQL\",\"hasCustomLabel\":true,\"label\":\"\u5BB9\
+  \u91CF (L)\",\"sqlExpression\":\"MAX(\u898F\u683C)\"},{\"expressionType\":\"SQL\"\
+  ,\"hasCustomLabel\":true,\"label\":\"\u552E\u50F9\",\"sqlExpression\":\"AVG(\u552E\
+  \u50F9)\"}],\"annotation_layers\":[],\"row_limit\":1000,\"series_limit\":0,\"order_desc\"\
+  :true,\"url_params\":{},\"custom_params\":{},\"custom_form_data\":{}}],\"form_data\"\
+  :{\"adhoc_filters\":[{\"clause\":\"WHERE\",\"comparator\":\"1\",\"expressionType\"\
+  :\"SIMPLE\",\"isExtra\":false,\"isNew\":false,\"operator\":\"==\",\"operatorId\"\
+  :\"EQUALS\",\"sqlExpression\":null,\"subject\":\"\u662F\u5426\u6700\u65B0\"},{\"\
+  clause\":\"WHERE\",\"comparator\":\"\u51B0\u7BB1\",\"expressionType\":\"SIMPLE\"\
+  ,\"isExtra\":false,\"isNew\":false,\"operator\":\"==\",\"operatorId\":\"EQUALS\"\
+  ,\"sqlExpression\":null,\"subject\":\"\u5206\u985E\"},{\"clause\":\"WHERE\",\"comparator\"\
+  :null,\"expressionType\":\"SQL\",\"isExtra\":false,\"isNew\":false,\"operator\"\
+  :null,\"sqlExpression\":\"\u898F\u683C IS NOT NULL\",\"subject\":null}],\"color_scheme\"\
+  :\"supersetColors\",\"datasource\":\"9__table\",\"entity\":\"\u5546\u54C1\u540D\u7A31\
+  \",\"legendType\":\"scroll\",\"max_bubble_size\":\"50\",\"opacity\":0.7,\"row_limit\"\
+  :1000,\"series\":\"\u985E\u578B\",\"show_legend\":true,\"size\":{\"expressionType\"\
+  :\"SQL\",\"hasCustomLabel\":true,\"label\":\"\u7B46\u6578\",\"sqlExpression\":\"\
+  COUNT(*)\"},\"slice_id\":13,\"viz_type\":\"bubble_v2\",\"x\":{\"expressionType\"\
+  :\"SQL\",\"hasCustomLabel\":true,\"label\":\"\u5BB9\u91CF (L)\",\"sqlExpression\"\
+  :\"MAX(\u898F\u683C)\"},\"xAxisFormat\":\"SMART_NUMBER\",\"x_axis_label\":\"\u5BB9\
+  \u91CF (L)\",\"y\":{\"expressionType\":\"SQL\",\"hasCustomLabel\":true,\"label\"\
+  :\"\u552E\u50F9\",\"sqlExpression\":\"AVG(\u552E\u50F9)\"},\"y_axis_format\":\"\
+  ,d\",\"y_axis_label\":\"\u552E\u50F9\uFF08\u5143\uFF09\",\"force\":false,\"result_format\"\
+  :\"json\",\"result_type\":\"full\"},\"result_format\":\"json\",\"result_type\":\"\
+  full\"}"
+cache_timeout: null
+uuid: 9ca1750f-2aa8-45eb-8222-cfafac5c8cfd
+version: 1.0.0
+dataset_uuid: c61b4862-ca4b-48fb-b682-f1588cd2cae3

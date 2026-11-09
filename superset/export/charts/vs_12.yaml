@@ -1,0 +1,68 @@
+slice_name: "\u6D17\u8863\u6A5F \u5BB9\u91CF vs \u552E\u50F9\uFF08\u6700\u65B0\u4E00\
+  \u5929\uFF09"
+description: null
+certified_by: null
+certification_details: null
+viz_type: bubble_v2
+params:
+  datasource: 9__table
+  viz_type: bubble_v2
+  adhoc_filters:
+  - expressionType: SIMPLE
+    subject: "\u662F\u5426\u6700\u65B0"
+    operator: ==
+    operatorId: EQUALS
+    comparator: '1'
+    clause: WHERE
+    sqlExpression: null
+    isExtra: false
+    isNew: false
+  - expressionType: SIMPLE
+    subject: "\u5206\u985E"
+    operator: ==
+    operatorId: EQUALS
+    comparator: "\u6D17\u8863\u6A5F"
+    clause: WHERE
+    sqlExpression: null
+    isExtra: false
+    isNew: false
+  - expressionType: SQL
+    sqlExpression: "\u898F\u683C IS NOT NULL"
+    clause: WHERE
+    subject: null
+    operator: null
+    comparator: null
+    isExtra: false
+    isNew: false
+  entity: "\u5546\u54C1\u540D\u7A31"
+  series: "\u985E\u578B"
+  x:
+    expressionType: SQL
+    sqlExpression: "MAX(\u898F\u683C)"
+    label: "\u5BB9\u91CF (kg)"
+    hasCustomLabel: true
+  y:
+    expressionType: SQL
+    sqlExpression: "AVG(\u552E\u50F9)"
+    label: "\u552E\u50F9"
+    hasCustomLabel: true
+  size:
+    expressionType: SQL
+    sqlExpression: COUNT(*)
+    label: "\u7B46\u6578"
+    hasCustomLabel: true
+  max_bubble_size: '50'
+  row_limit: 1000
+  show_legend: true
+  legendType: scroll
+  x_axis_label: "\u5BB9\u91CF (kg)"
+  y_axis_label: "\u552E\u50F9\uFF08\u5143\uFF09"
+  y_axis_format: ',d'
+  xAxisFormat: SMART_NUMBER
+  opacity: 0.7
+  color_scheme: supersetColors
+query_context: null
+cache_timeout: null
+uuid: 2e03e941-449b-47f2-b1c7-6fef85620e1f
+version: 1.0.0
+dataset_uuid: c61b4862-ca4b-48fb-b682-f1588cd2cae3

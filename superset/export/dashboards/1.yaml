@@ -7,6 +7,21 @@ certification_details: ''
 published: true
 uuid: 2bd70fdd-9a1b-402d-8fb0-022bf24590cd
 position:
+  CHART-Bpesdrqqyz0_nxbg8FQs_:
+    children: []
+    id: CHART-Bpesdrqqyz0_nxbg8FQs_
+    meta:
+      chartId: 12
+      height: 50
+      sliceName: "\u6D17\u8863\u6A5F \u5BB9\u91CF vs \u552E\u50F9\uFF08\u6700\u65B0\
+        \u4E00\u5929\uFF09"
+      uuid: 2e03e941-449b-47f2-b1c7-6fef85620e1f
+      width: 4
+    parents:
+    - ROOT_ID
+    - GRID_ID
+    - ROW-Mh_fLhViIFJ1J-0zSclJE
+    type: CHART
   CHART-explore-1-1:
     children: []
     id: CHART-explore-1-1
@@ -36,7 +51,9 @@ position:
     parents:
     - ROOT_ID
     - GRID_ID
-    - ROW-MBmSdtFShzDTN41bOBKgr
+    - TABS-KaEnXA1HgnhHSPhSh_au8
+    - TAB-hBUIFraBC9Q8i7OyJrvDR
+    - ROW-0Sk3To0HPUCoL2ycMf2kv
     type: CHART
   CHART-explore-2-1:
     children: []
@@ -171,6 +188,8 @@ position:
     - ROW-Hf-aimwvl_E9soMyBw-8s
     - TABS-KaEnXA1HgnhHSPhSh_au8
     - ROW-Mh_fLhViIFJ1J-0zSclJE
+    - ROW-spec-fridge-fryer
+    - ROW-spec-robot
     - ROW-EiqHmOO3NIgB4RNmuHSoR
     id: GRID_ID
     parents:
@@ -239,6 +258,7 @@ position:
   ROW-Mh_fLhViIFJ1J-0zSclJE:
     children:
     - CHART-explore-8-1
+    - CHART-Bpesdrqqyz0_nxbg8FQs_
     id: ROW-Mh_fLhViIFJ1J-0zSclJE
     meta:
       '0': ROOT_ID
@@ -324,6 +344,90 @@ position:
     - ROOT_ID
     - GRID_ID
     type: TABS
+  ROW-spec-fridge-fryer:
+    children:
+    - CHART-spec-13
+    - CHART-spec-14
+    - CHART-spec-15
+    id: ROW-spec-fridge-fryer
+    meta:
+      '0': ROOT_ID
+      background: BACKGROUND_TRANSPARENT
+    parents:
+    - ROOT_ID
+    - GRID_ID
+    type: ROW
+  CHART-spec-13:
+    children: []
+    id: CHART-spec-13
+    meta:
+      chartId: 13
+      height: 50
+      sliceName: "\u51B0\u7BB1 \u5BB9\u91CF vs \u552E\u50F9\uFF08\u6700\u65B0\u4E00\
+        \u5929\uFF09"
+      uuid: 9ca1750f-2aa8-45eb-8222-cfafac5c8cfd
+      width: 4
+    parents:
+    - ROOT_ID
+    - GRID_ID
+    - ROW-spec-fridge-fryer
+    type: CHART
+  CHART-spec-14:
+    children: []
+    id: CHART-spec-14
+    meta:
+      chartId: 14
+      height: 50
+      sliceName: "\u6C23\u70B8\u934B \u5BB9\u91CF vs \u552E\u50F9\uFF08\u6700\u65B0\
+        \u4E00\u5929\uFF09"
+      uuid: 88f4bd47-ce46-4510-a597-0bce27e6f88e
+      width: 4
+    parents:
+    - ROOT_ID
+    - GRID_ID
+    - ROW-spec-fridge-fryer
+    type: CHART
+  CHART-spec-15:
+    children: []
+    id: CHART-spec-15
+    meta:
+      chartId: 15
+      height: 50
+      sliceName: "\u96FB\u8996 \u5C3A\u5BF8 vs \u552E\u50F9\uFF08\u6700\u65B0\u4E00\
+        \u5929\uFF09"
+      uuid: 6c88f3a2-5b82-48e4-8ce7-eea0fcb33573
+      width: 4
+    parents:
+    - ROOT_ID
+    - GRID_ID
+    - ROW-spec-fridge-fryer
+    type: CHART
+  ROW-spec-robot:
+    children:
+    - CHART-spec-16
+    id: ROW-spec-robot
+    meta:
+      '0': ROOT_ID
+      background: BACKGROUND_TRANSPARENT
+    parents:
+    - ROOT_ID
+    - GRID_ID
+    type: ROW
+  CHART-spec-16:
+    children: []
+    id: CHART-spec-16
+    meta:
+      chartId: 16
+      height: 50
+      sliceName: "\u6383\u5730\u6A5F\u5668\u4EBA \u529F\u80FD vs \u552E\u50F9\uFF08\
+        \u6700\u65B0\u4E00\u5929\uFF09"
+      uuid: d0cfb402-7926-47a0-a5e8-1c90592d2230
+      width: 4
+    parents:
+    - ROOT_ID
+    - GRID_ID
+    - ROW-spec-robot
+    type: CHART
 metadata:
   label_colors:
     "\u71E6\u5764": '#D2621A'
@@ -345,6 +449,7 @@ metadata:
         - 8
         - 9
         - 10
+        - 12
     '2':
       id: 2
       crossFilters:
@@ -359,6 +464,7 @@ metadata:
         - 8
         - 9
         - 10
+        - 12
     '3':
       id: 3
       crossFilters:
@@ -373,6 +479,7 @@ metadata:
         - 8
         - 9
         - 10
+        - 12
     '4':
       id: 4
       crossFilters:
@@ -387,6 +494,7 @@ metadata:
         - 8
         - 9
         - 10
+        - 12
     '5':
       id: 5
       crossFilters:
@@ -401,6 +509,7 @@ metadata:
         - 8
         - 9
         - 10
+        - 12
     '6':
       id: 6
       crossFilters:
@@ -415,6 +524,7 @@ metadata:
         - 8
         - 9
         - 10
+        - 12
     '7':
       id: 7
       crossFilters:
@@ -429,6 +539,7 @@ metadata:
         - 8
         - 9
         - 10
+        - 12
     '8':
       id: 8
       crossFilters:
@@ -443,6 +554,7 @@ metadata:
         - 7
         - 9
         - 10
+        - 12
     '9':
       id: 9
       crossFilters:
@@ -457,6 +569,7 @@ metadata:
         - 7
         - 8
         - 10
+        - 12
     '10':
       id: 10
       crossFilters:
@@ -471,6 +584,7 @@ metadata:
         - 7
         - 8
         - 9
+        - 12
   global_chart_configuration:
     scope:
       rootPath:
@@ -487,6 +601,7 @@ metadata:
     - 8
     - 9
     - 10
+    - 12
   color_scheme: ''
   refresh_frequency: 0
   color_scheme_domain: []
@@ -496,7 +611,10 @@ metadata:
   - Yahoo
   - momo
   - "\u71E6\u5764"
-  map_label_colors: {}
+  map_label_colors:
+    "\u76F4\u7ACB": '#1FA8C9'
+    "\u6EFE\u7B52": '#454E7C'
+    "\u96D9\u69FD": '#5AC189'
   timed_refresh_immune_slices: []
   cross_filters_enabled: true
   default_filters: '{}'
@@ -579,4 +697,8 @@ metadata:
       - 5
     type: NATIVE_FILTER
     description: ''
+    chartsInScope:
+    - 4
+    tabsInScope:
+    - TAB-hBUIFraBC9Q8i7OyJrvDR
 version: 1.0.0

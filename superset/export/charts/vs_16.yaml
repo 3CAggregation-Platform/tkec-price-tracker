@@ -1,0 +1,53 @@
+slice_name: "\u6383\u5730\u6A5F\u5668\u4EBA \u529F\u80FD vs \u552E\u50F9\uFF08\u6700\
+  \u65B0\u4E00\u5929\uFF09"
+description: null
+certified_by: null
+certification_details: null
+viz_type: box_plot
+params:
+  datasource: 9__table
+  viz_type: box_plot
+  columns:
+  - "\u5546\u54C1\u540D\u7A31"
+  groupby:
+  - "\u985E\u578B"
+  metrics:
+  - expressionType: SQL
+    sqlExpression: "AVG(\u552E\u50F9)"
+    label: "\u552E\u50F9"
+    hasCustomLabel: true
+  adhoc_filters:
+  - expressionType: SIMPLE
+    subject: "\u662F\u5426\u6700\u65B0"
+    operator: ==
+    operatorId: EQUALS
+    comparator: '1'
+    clause: WHERE
+    sqlExpression: null
+    isExtra: false
+    isNew: false
+  - expressionType: SIMPLE
+    subject: "\u5206\u985E"
+    operator: ==
+    operatorId: EQUALS
+    comparator: "\u6383\u5730\u6A5F\u5668\u4EBA"
+    clause: WHERE
+    sqlExpression: null
+    isExtra: false
+    isNew: false
+  whiskerOptions: Min/max (no outliers)
+  x_axis_title: "\u529F\u80FD\u985E\u578B"
+  x_axis_title_margin: 30
+  y_axis_title: "\u552E\u50F9\uFF08\u5143\uFF09"
+  y_axis_title_margin: 50
+  y_axis_title_position: Left
+  color_scheme: supersetColors
+  x_ticks_layout: auto
+  number_format: ',d'
+  date_format: smart_date
+  row_limit: 1000
+query_context: null
+cache_timeout: null
+uuid: d0cfb402-7926-47a0-a5e8-1c90592d2230
+version: 1.0.0
+dataset_uuid: c61b4862-ca4b-48fb-b682-f1588cd2cae3
