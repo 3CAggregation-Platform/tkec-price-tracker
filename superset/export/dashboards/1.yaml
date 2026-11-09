@@ -23,6 +23,21 @@ position:
     - TAB-hBUIFraBC9Q8i7OyJrvDR
     - ROW-kW704vHGrLj3klk7-xle7
     type: CHART
+  CHART-explore-10-1:
+    children: []
+    id: CHART-explore-10-1
+    meta:
+      chartId: 10
+      height: 50
+      sliceName: "\u8FFD\u8E64\u578B\u865F\u8DE8\u5E73\u53F0\u6BD4\u50F9\uFF08\u4ECA\
+        \u5929\uFF09"
+      uuid: 84e32839-5495-40b4-a0fc-da0ef4dde975
+      width: 6
+    parents:
+    - ROOT_ID
+    - GRID_ID
+    - ROW-MBmSdtFShzDTN41bOBKgr
+    type: CHART
   CHART-explore-2-1:
     children: []
     id: CHART-explore-2-1
@@ -136,13 +151,27 @@ position:
     - GRID_ID
     - ROW-Mh_fLhViIFJ1J-0zSclJE
     type: CHART
+  CHART-explore-9-1:
+    children: []
+    id: CHART-explore-9-1
+    meta:
+      chartId: 9
+      height: 50
+      sliceName: "\u964D\u5E45\u6392\u884C\uFF08BigQuery\uFF09"
+      uuid: 5744de85-4d7c-4246-837d-b26549f96c1e
+      width: 6
+    parents:
+    - ROOT_ID
+    - GRID_ID
+    - ROW-EiqHmOO3NIgB4RNmuHSoR
+    type: CHART
   DASHBOARD_VERSION_KEY: v2
   GRID_ID:
     children:
     - ROW-Hf-aimwvl_E9soMyBw-8s
     - TABS-KaEnXA1HgnhHSPhSh_au8
     - ROW-Mh_fLhViIFJ1J-0zSclJE
-    - ROW-N-CRXCKX6G
+    - ROW-EiqHmOO3NIgB4RNmuHSoR
     id: GRID_ID
     parents:
     - ROOT_ID
@@ -176,6 +205,7 @@ position:
   ROW-0Sk3To0HPUCoL2ycMf2kv:
     children:
     - CHART-explore-5-1
+    - CHART-explore-10-1
     id: ROW-0Sk3To0HPUCoL2ycMf2kv
     meta:
       background: BACKGROUND_TRANSPARENT
@@ -184,6 +214,17 @@ position:
     - GRID_ID
     - TABS-KaEnXA1HgnhHSPhSh_au8
     - TAB-hBUIFraBC9Q8i7OyJrvDR
+    type: ROW
+  ROW-EiqHmOO3NIgB4RNmuHSoR:
+    children:
+    - CHART-explore-9-1
+    id: ROW-EiqHmOO3NIgB4RNmuHSoR
+    meta:
+      '0': ROOT_ID
+      background: BACKGROUND_TRANSPARENT
+    parents:
+    - ROOT_ID
+    - GRID_ID
     type: ROW
   ROW-Hf-aimwvl_E9soMyBw-8s:
     children:
@@ -283,31 +324,6 @@ position:
     - ROOT_ID
     - GRID_ID
     type: TABS
-  ROW-N-CRXCKX6G:
-    children:
-    - CHART-O4TEN2KH
-    id: ROW-N-CRXCKX6G
-    meta:
-      '0': ROOT_ID
-      background: BACKGROUND_TRANSPARENT
-    type: ROW
-    parents:
-    - ROOT_ID
-    - GRID_ID
-  CHART-O4TEN2KH:
-    children: []
-    id: CHART-O4TEN2KH
-    meta:
-      chartId: 9
-      height: 50
-      sliceName: "\u964D\u5E45\u6392\u884C\uFF08BigQuery\uFF09"
-      uuid: 5744de85-4d7c-4246-837d-b26549f96c1e
-      width: 4
-    type: CHART
-    parents:
-    - ROOT_ID
-    - GRID_ID
-    - ROW-N-CRXCKX6G
 metadata:
   label_colors:
     "\u71E6\u5764": '#D2621A'
@@ -327,6 +343,8 @@ metadata:
         - 6
         - 7
         - 8
+        - 9
+        - 10
     '2':
       id: 2
       crossFilters:
@@ -339,6 +357,8 @@ metadata:
         - 6
         - 7
         - 8
+        - 9
+        - 10
     '3':
       id: 3
       crossFilters:
@@ -351,6 +371,8 @@ metadata:
         - 6
         - 7
         - 8
+        - 9
+        - 10
     '4':
       id: 4
       crossFilters:
@@ -363,6 +385,8 @@ metadata:
         - 6
         - 7
         - 8
+        - 9
+        - 10
     '5':
       id: 5
       crossFilters:
@@ -375,6 +399,8 @@ metadata:
         - 6
         - 7
         - 8
+        - 9
+        - 10
     '6':
       id: 6
       crossFilters:
@@ -387,6 +413,8 @@ metadata:
         - 5
         - 7
         - 8
+        - 9
+        - 10
     '7':
       id: 7
       crossFilters:
@@ -399,6 +427,8 @@ metadata:
         - 5
         - 6
         - 8
+        - 9
+        - 10
     '8':
       id: 8
       crossFilters:
@@ -411,6 +441,36 @@ metadata:
         - 5
         - 6
         - 7
+        - 9
+        - 10
+    '9':
+      id: 9
+      crossFilters:
+        scope: global
+        chartsInScope:
+        - 1
+        - 2
+        - 3
+        - 4
+        - 5
+        - 6
+        - 7
+        - 8
+        - 10
+    '10':
+      id: 10
+      crossFilters:
+        scope: global
+        chartsInScope:
+        - 1
+        - 2
+        - 3
+        - 4
+        - 5
+        - 6
+        - 7
+        - 8
+        - 9
   global_chart_configuration:
     scope:
       rootPath:
@@ -425,6 +485,8 @@ metadata:
     - 6
     - 7
     - 8
+    - 9
+    - 10
   color_scheme: ''
   refresh_frequency: 0
   color_scheme_domain: []
@@ -516,4 +578,8 @@ metadata:
       - 5
     type: NATIVE_FILTER
     description: ''
+    chartsInScope:
+    - 4
+    tabsInScope:
+    - TAB-hBUIFraBC9Q8i7OyJrvDR
 version: 1.0.0

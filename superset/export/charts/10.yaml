@@ -1,0 +1,79 @@
+slice_name: "\u8FFD\u8E64\u578B\u865F\u8DE8\u5E73\u53F0\u6BD4\u50F9\uFF08\u4ECA\u5929\
+  \uFF09"
+description: null
+certified_by: null
+certification_details: null
+viz_type: table
+params:
+  datasource: 8__table
+  viz_type: table
+  slice_id: 10
+  query_mode: raw
+  groupby: []
+  temporal_columns_lookup: {}
+  metrics: []
+  all_columns:
+  - "\u5206\u985E"
+  - "\u5EE0\u724C"
+  - "\u578B\u865F"
+  - "\u71E6\u5764"
+  - PChome
+  - Yahoo
+  - "\u6700\u4FBF\u5B9C\u5E73\u53F0"
+  - "\u50F9\u5DEE"
+  - expressionType: SQL
+    label: "\u50F9\u5DEE\u7387"
+    sqlExpression: "\u50F9\u5DEE\u6BD4\u4F8B"
+  percent_metrics: []
+  adhoc_filters: []
+  order_by_cols:
+  - '["\u50f9\u5dee\u6bd4\u4f8b", false]'
+  row_limit: 100
+  table_timestamp_format: smart_date
+  allow_render_html: true
+  column_config:
+    PChome:
+      d3NumberFormat: ',d'
+    Yahoo:
+      d3NumberFormat: ',d'
+    "\u50F9\u5DEE":
+      d3NumberFormat: ',d'
+      showCellBars: true
+    "\u71E6\u5764":
+      d3NumberFormat: ',d'
+    "\u50F9\u5DEE\u7387":
+      d3NumberFormat: ',.1%'
+      showCellBars: true
+  show_cell_bars: false
+  color_pn: true
+  conditional_formatting: []
+  extra_form_data: {}
+  dashboards:
+  - 1
+query_context: "{\"datasource\":{\"id\":8,\"type\":\"table\"},\"force\":false,\"queries\"\
+  :[{\"filters\":[],\"extras\":{\"having\":\"\",\"where\":\"\"},\"applied_time_extras\"\
+  :{},\"columns\":[\"\u5206\u985E\",\"\u5EE0\u724C\",\"\u578B\u865F\",\"\u71E6\u5764\
+  \",\"PChome\",\"Yahoo\",\"\u6700\u4FBF\u5B9C\u5E73\u53F0\",\"\u50F9\u5DEE\",{\"\
+  expressionType\":\"SQL\",\"label\":\"\u50F9\u5DEE\u7387\",\"sqlExpression\":\"\u50F9\
+  \u5DEE\u6BD4\u4F8B\"}],\"orderby\":[[\"\u50F9\u5DEE\u6BD4\u4F8B\",false]],\"annotation_layers\"\
+  :[],\"row_limit\":100,\"series_limit\":0,\"order_desc\":true,\"url_params\":{},\"\
+  custom_params\":{},\"custom_form_data\":{},\"post_processing\":[],\"time_offsets\"\
+  :[]}],\"form_data\":{\"datasource\":\"8__table\",\"viz_type\":\"table\",\"slice_id\"\
+  :10,\"query_mode\":\"raw\",\"groupby\":[],\"temporal_columns_lookup\":{},\"metrics\"\
+  :[],\"all_columns\":[\"\u5206\u985E\",\"\u5EE0\u724C\",\"\u578B\u865F\",\"\u71E6\
+  \u5764\",\"PChome\",\"Yahoo\",\"\u6700\u4FBF\u5B9C\u5E73\u53F0\",\"\u50F9\u5DEE\"\
+  ,{\"expressionType\":\"SQL\",\"label\":\"\u50F9\u5DEE\u7387\",\"sqlExpression\"\
+  :\"\u50F9\u5DEE\u6BD4\u4F8B\"}],\"percent_metrics\":[],\"adhoc_filters\":[],\"order_by_cols\"\
+  :[\"[\\\"\\\\u50f9\\\\u5dee\\\\u6bd4\\\\u4f8b\\\", false]\"],\"row_limit\":100,\"\
+  table_timestamp_format\":\"smart_date\",\"allow_render_html\":true,\"column_config\"\
+  :{\"PChome\":{\"d3NumberFormat\":\",d\"},\"Yahoo\":{\"d3NumberFormat\":\",d\"},\"\
+  \u50F9\u5DEE\":{\"d3NumberFormat\":\",d\",\"showCellBars\":true},\"\u71E6\u5764\"\
+  :{\"d3NumberFormat\":\",d\"},\"\u50F9\u5DEE\u7387\":{\"d3NumberFormat\":\",.1%\"\
+  ,\"showCellBars\":true}},\"show_cell_bars\":false,\"color_pn\":true,\"conditional_formatting\"\
+  :[],\"extra_form_data\":{},\"dashboards\":[1],\"force\":false,\"result_format\"\
+  :\"json\",\"result_type\":\"full\",\"include_time\":false},\"result_format\":\"\
+  json\",\"result_type\":\"full\"}"
+cache_timeout: null
+uuid: 84e32839-5495-40b4-a0fc-da0ef4dde975
+version: 1.0.0
+dataset_uuid: 914d3f8f-92a7-45ac-ad09-547617ea6c6f

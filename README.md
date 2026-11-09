@@ -553,8 +553,8 @@ bigquery://project-fb94c850-2c44-43c2-afe/tk3c_dw
 
 ### Dashboard 備份與還原
 
-圖表、dataset、dashboard 的設定存在 volume 的 SQLite，另外匯出成 YAML 放在 `superset/export/` 進 git（資料庫密碼會被遮成 `XXXXXXXXXX`）。目前內容：dashboard「家電比價」（分類、型號篩選器；型號只作用在「單一型號各平台價格」）與 9 張圖：
-  - 「每日比價」分頁：四平台平均售價走勢、同型號跨平台比價（最新一天）、四平台售價分布（近 7 天，箱形圖）、單一型號各平台價格、降價排行（最近一次 vs 上一次）、降幅排行（BigQuery `mart_price_drop`，降 3% 以上依降幅排序）
+圖表、dataset、dashboard 的設定存在 volume 的 SQLite，另外匯出成 YAML 放在 `superset/export/` 進 git（資料庫密碼會被遮成 `XXXXXXXXXX`）。目前內容：dashboard「家電比價」（分類、型號篩選器；型號只作用在「單一型號各平台價格」）與 10 張圖：
+  - 「每日比價」分頁：追蹤型號跨平台比價（今天，`watch_price_daily` 的 virtual dataset，燦坤／PChome／Yahoo 並排、最便宜平台、價差率）、四平台平均售價走勢、同型號跨平台比價（最新一天）、四平台售價分布（近 7 天，箱形圖）、單一型號各平台價格、降價排行（最近一次 vs 上一次）、降幅排行（BigQuery `mart_price_drop`，降 3% 以上依降幅排序）
   - 「長期分析」分頁：價格變動排行（觀察 7 天以上）、雙11價格檢驗（11/11 售價 vs 前 30 天，含「雙11前先漲價」判斷）、最便宜平台次數（BigQuery `mart_cross_platform_compare`，同型號在兩個以上平台時哪個平台最便宜）
 
 ```bash
