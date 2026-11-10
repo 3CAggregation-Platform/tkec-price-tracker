@@ -405,11 +405,17 @@ docker exec -i $(docker ps -q -f name=tk3c_mysql) sh -c 'mysql -uroot -p"$MYSQL_
 
 ### 更新程式
 
+image 由 GitHub Actions（`.github/workflows/docker-image.yml`）自動 build 並推上 Docker Hub：
+
+- push 到 main 或開 PR：檢查 Python 語法並試 build 兩個 image（不 push）
+- push tag 才會推上 Docker Hub，版本號取自 tag：`tk3c-v0.0.12` → `pennyliu32/tk3c-price-tracker:0.0.12`、`airflow-v0.0.6` → `pennyliu32/tk3c-airflow:0.0.6`
+- Docker Hub 帳號與 Access Token 存在 repo Secrets（`DOCKERHUB_USERNAME`、`DOCKERHUB_TOKEN`），不寫在程式碼裡
+
 ```bash
-# 本機：build 新版並推上 Docker Hub
-docker build -t pennyliu32/tk3c-price-tracker:<新版本> .
-docker push pennyliu32/tk3c-price-tracker:<新版本>
+# 本機：推程式碼與版本 tag，GitHub Actions 會 build 並 push image
 git push
+git tag tk3c-v<新版本> && git push origin tk3c-v<新版本>
+# 等 GitHub 的 Actions 頁面顯示成功後再到 VM 部署
 
 # VM：拉最新程式碼後重新部署
 cd ~/tk3c-price-tracker && git pull

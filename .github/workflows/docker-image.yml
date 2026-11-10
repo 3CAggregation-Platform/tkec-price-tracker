@@ -1,0 +1,81 @@
+# 自動 build / push Docker image（課程 GCP 6/8：GitHub Action 用來 build、push image，帳密放 Secrets）
+#
+# - push 到 main 或開 PR：檢查 Python 語法、試 build 兩個 image（不 push），確認改動不會讓 image 壞掉
+# - push tag 才會推上 Docker Hub，版本號取自 tag：
+#     git tag tk3c-v0.0.12    && git push origin tk3c-v0.0.12     → pennyliu32/tk3c-price-tracker:0.0.12
+#     git tag airflow-v0.0.6  && git push origin airflow-v0.0.6   → pennyliu32/tk3c-airflow:0.0.6
+#
+# 需要的 repo Secrets（Settings → Secrets and variables → Actions）：
+#   DOCKERHUB_USERNAME  Docker Hub 帳號（pennyliu32）
+#   DOCKERHUB_TOKEN     Docker Hub Access Token（Read & Write），不要用登入密碼
+#
+# .env 不會進 image（見 .dockerignore），密碼在部署時才由 VM 上的 .env 帶入。
+# 部署到 VM 仍手動執行 docker stack deploy（見 README「更新程式」）。
+
+name: Docker image
+
+on:
+  push:
+    branches: [main]
+    tags: ["tk3c-v*", "airflow-v*"]
+  pull_request:
+    branches: [main]
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: 檢查 Python 語法
+        run: python -m compileall -q app airflow/dags
+
+  tk3c:
+    needs: check
+    if: ${{ !startsWith(github.ref, 'refs/tags/airflow-v') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: 登入 Docker Hub
+        if: startsWith(github.ref, 'refs/tags/tk3c-v')
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: 取得版本號
+        id: ver
+        run: echo "version=${GITHUB_REF_NAME#tk3c-v}" >> "$GITHUB_OUTPUT"
+      - name: Build（tag 時 push）
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: ${{ startsWith(github.ref, 'refs/tags/tk3c-v') }}
+          tags: pennyliu32/tk3c-price-tracker:${{ startsWith(github.ref, 'refs/tags/tk3c-v') && steps.ver.outputs.version || 'ci' }}
+          cache-from: type=gha,scope=tk3c
+          cache-to: type=gha,mode=max,scope=tk3c
+
+  airflow:
+    needs: check
+    if: ${{ !startsWith(github.ref, 'refs/tags/tk3c-v') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: 登入 Docker Hub
+        if: startsWith(github.ref, 'refs/tags/airflow-v')
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: 取得版本號
+        id: ver
+        run: echo "version=${GITHUB_REF_NAME#airflow-v}" >> "$GITHUB_OUTPUT"
+      - name: Build（tag 時 push）
+        uses: docker/build-push-action@v6
+        with:
+          context: airflow
+          push: ${{ startsWith(github.ref, 'refs/tags/airflow-v') }}
+          tags: pennyliu32/tk3c-airflow:${{ startsWith(github.ref, 'refs/tags/airflow-v') && steps.ver.outputs.version || 'ci' }}
