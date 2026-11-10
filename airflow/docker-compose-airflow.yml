@@ -26,6 +26,12 @@ x-airflow-env: &airflow-env
   AIRFLOW__WEBSERVER__BASE_URL: http://localhost:8090
   AIRFLOW__CELERY__BROKER_URL: redis://airflow-redis:6379/0
   AIRFLOW__CELERY__RESULT_BACKEND: redis://airflow-redis:6379/1
+  # task log 存到 GCS（課程 GCP 3/8 remote_logging）：container 重新部署後 log 不會消失，webserver 直接從 GCS 讀
+  # 連線用 VM 的 service account（ADC），不需要金鑰；bucket 與 BigQuery 同步共用，log 放在 airflow-logs/ 底下
+  AIRFLOW__LOGGING__REMOTE_LOGGING: "True"
+  AIRFLOW__LOGGING__REMOTE_BASE_LOG_FOLDER: gs://${GCS_BUCKET:-tk3c-price-raw-fb94c850}/airflow-logs
+  AIRFLOW__LOGGING__REMOTE_LOG_CONN_ID: google_cloud_default
+  AIRFLOW_CONN_GOOGLE_CLOUD_DEFAULT: google-cloud-platform://
   TK3C_IMAGE: pennyliu32/tk3c-price-tracker:${TK3C_IMAGE_VERSION}
   TK3C_NETWORK: tk3c_attachable_network
   MOMO_IMAGE: bihruwang/momo_crawler:${MOMO_IMAGE_VERSION:-0.0.2}  # 組員 momo 爬蟲（momo_producer DAG 用）

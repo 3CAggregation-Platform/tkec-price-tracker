@@ -301,6 +301,7 @@ Airflow（每天 20:00）→ DockerOperator 執行 python -m app.producer → Ra
 - Airflow 只負責送任務，送成功就是綠色；爬蟲失敗的重試在 `app/tasks.py`（隔 5 分鐘，最多 3 次）
 - metadata 存在本專題 MySQL 的 `airflow` 資料庫（專用帳號 `airflow`，只能存取這個資料庫）
 - 帳密、金鑰都由 `.env` 的 `AIRFLOW_*` 在部署時帶入，不會打包進 image
+- task log 存到 GCS（`gs://tk3c-price-raw-fb94c850/airflow-logs/`，remote logging）：container 重新部署後 log 不會消失，Airflow 網頁直接從 GCS 讀；用 VM 的 service account 連線，不需要金鑰
 
 ### 第一次部署
 
