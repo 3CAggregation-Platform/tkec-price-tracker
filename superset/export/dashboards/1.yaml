@@ -20,7 +20,9 @@ position:
     parents:
     - ROOT_ID
     - GRID_ID
-    - ROW-Mh_fLhViIFJ1J-0zSclJE
+    - TABS-KaEnXA1HgnhHSPhSh_au8
+    - TAB-dal1FqRDlux-HLEU3OjH5
+    - ROW-6wm9jGWslPTD-_KjoEk-O
     type: CHART
   CHART-explore-1-1:
     children: []
@@ -166,7 +168,9 @@ position:
     parents:
     - ROOT_ID
     - GRID_ID
-    - ROW-Mh_fLhViIFJ1J-0zSclJE
+    - TABS-KaEnXA1HgnhHSPhSh_au8
+    - TAB-Si2ce1Tnv425HhgMyH9VL
+    - ROW-WmDcDLqOeOenEbNExn1QN
     type: CHART
   CHART-explore-9-1:
     children: []
@@ -180,7 +184,9 @@ position:
     parents:
     - ROOT_ID
     - GRID_ID
-    - ROW-EiqHmOO3NIgB4RNmuHSoR
+    - TABS-KaEnXA1HgnhHSPhSh_au8
+    - TAB-hBUIFraBC9Q8i7OyJrvDR
+    - ROW-f7M7b0n4tXR9fLk_cOgb9
     type: CHART
   CHART-spec-13:
     children: []
@@ -195,7 +201,9 @@ position:
     parents:
     - ROOT_ID
     - GRID_ID
-    - ROW-spec-fridge-fryer
+    - TABS-KaEnXA1HgnhHSPhSh_au8
+    - TAB-dal1FqRDlux-HLEU3OjH5
+    - ROW-6wm9jGWslPTD-_KjoEk-O
     type: CHART
   CHART-spec-14:
     children: []
@@ -210,7 +218,9 @@ position:
     parents:
     - ROOT_ID
     - GRID_ID
-    - ROW-spec-fridge-fryer
+    - TABS-KaEnXA1HgnhHSPhSh_au8
+    - TAB-dal1FqRDlux-HLEU3OjH5
+    - ROW-Lh1if1bv-2mVHy4DHnz4G
     type: CHART
   CHART-spec-15:
     children: []
@@ -225,7 +235,9 @@ position:
     parents:
     - ROOT_ID
     - GRID_ID
-    - ROW-spec-fridge-fryer
+    - TABS-KaEnXA1HgnhHSPhSh_au8
+    - TAB-dal1FqRDlux-HLEU3OjH5
+    - ROW-Lh1if1bv-2mVHy4DHnz4G
     type: CHART
   CHART-spec-16:
     children: []
@@ -240,7 +252,9 @@ position:
     parents:
     - ROOT_ID
     - GRID_ID
-    - ROW-spec-robot
+    - TABS-KaEnXA1HgnhHSPhSh_au8
+    - TAB-dal1FqRDlux-HLEU3OjH5
+    - ROW-WqErX0szO1IQAqgwJvHYU
     type: CHART
   DASHBOARD_VERSION_KEY: v2
   GRID_ID:
@@ -460,9 +474,9 @@ position:
 metadata:
   label_colors:
     "\u71E6\u5764": '#D2621A'
-    PChome: '#2B6CB0'
-    Yahoo: '#6B46C1'
-    momo: '#D53F8C'
+    PChome: '#3B7DD8'
+    Yahoo: '#7B3FA0'
+    momo: '#1B6B4A'
   chart_configuration:
     '1':
       id: 1
@@ -696,19 +710,7 @@ metadata:
     - 16
   color_scheme: ''
   refresh_frequency: 0
-  color_scheme_domain: []
   expanded_slices: {}
-  shared_label_colors:
-  - PChome
-  - Yahoo
-  - momo
-  - "\u71E6\u5764"
-  map_label_colors:
-    "\u5168\u80FD\u57FA\u7AD9": '#1FA8C9'
-    "\u57FA\u672C\u6383\u5730": '#454E7C'
-    "\u6383\u62D6": '#5AC189'
-    "\u6A5F\u68B0\u81C2": '#FF7F44'
-    "\u6EFE\u7B52\u6D17\u5730": '#666666'
   timed_refresh_immune_slices: []
   cross_filters_enabled: true
   default_filters: '{}'
@@ -795,4 +797,11 @@ metadata:
     - 4
     tabsInScope:
     - TAB-hBUIFraBC9Q8i7OyJrvDR
+  color_scheme_domain: []
+  shared_label_colors:
+  - "\u71E6\u5764"
+  - PChome
+  - momo
+  - Yahoo
+  map_label_colors: {}
 version: 1.0.0
