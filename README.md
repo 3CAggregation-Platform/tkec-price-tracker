@@ -52,6 +52,7 @@ tk3c-price-tracker/
 │   ├── watchlist.py               # 追蹤清單：讀 watchlist → 各平台用型號搜尋 → 寫入 watch_price_daily
 │   ├── goods_daily.py             # 轉成與 momo 四類資料相同的中文欄位格式（品牌、型號統一寫法）並同步到 goods_daily
 │   ├── bigquery_sync.py           # MySQL → GCS → BigQuery 每日同步（Airflow tk3c_bigquery_sync 21:30）
+│   ├── crawl_check.py             # 每日爬蟲結果檢查：各平台、分類有沒有抓到資料（0 筆就讓 Airflow task 變紅）
 │   └── special_topic3C/           # 爬蟲
 │       ├── fridge_search.py       # 燦坤冰箱
 │       ├── tv_search.py           # 燦坤電視
@@ -301,6 +302,7 @@ Airflow（每天 20:00）→ DockerOperator 執行 python -m app.producer → Ra
 - Airflow 只負責送任務，送成功就是綠色；爬蟲失敗的重試在 `app/tasks.py`（隔 5 分鐘，最多 3 次）
 - metadata 存在本專題 MySQL 的 `airflow` 資料庫（專用帳號 `airflow`，只能存取這個資料庫）
 - 帳密、金鑰都由 `.env` 的 `AIRFLOW_*` 在部署時帶入，不會打包進 image
+- 爬蟲結果檢查：`tk3c_bigquery_sync` DAG 的 `check_crawl_results` task 每天 21:30 執行 `python -m app.crawl_check`，讀 `crawl_log` 確認當天燦坤／PChome／Yahoo 各 5 類＋追蹤清單、momo 氣炸鍋都有紀錄且筆數大於 0，否則 task 變紅色並列出哪幾項異常；筆數不到前 7 天平均一半只印警告。momo 自 11/08 起被網站擋（403），DAG 裡用 `CRAWL_CHECK_IGNORE=momo` 先列為已知問題，恢復後拿掉。和 BigQuery 同步互不相依，檢查失敗不會擋住同步
 - task log 存到 GCS（`gs://tk3c-price-raw-fb94c850/airflow-logs/`，remote logging）：container 重新部署後 log 不會消失，Airflow 網頁直接從 GCS 讀；用 VM 的 service account 連線，不需要金鑰
 
 ### 第一次部署
@@ -334,6 +336,10 @@ docker stack services tk3c-airflow
 
 # 手動觸發一次（網頁上按 DAG 右邊的 ▶ 也可以）
 docker exec $(docker ps -q -f name=tk3c-airflow_scheduler) /dataflow/.venv/bin/airflow dags trigger tk3c_producer
+
+# 檢查某一天的爬蟲結果（Airflow 上的 check_crawl_results 也是跑這個）
+docker exec -e MYSQL_READER_USER=superset_reader -e MYSQL_PASSWORD_SECRET=tk3c-mysql-reader-password \
+  $(docker ps -q -f name=tk3c_celery-worker) python -m app.crawl_check --date 2026-11-10
 
 # 只重跑某一個分類：直接執行該分類（不經過 RabbitMQ）
 docker exec $(docker ps -q -f name=tk3c_celery-worker) python -m app.run_crawl tk3c 冰箱
