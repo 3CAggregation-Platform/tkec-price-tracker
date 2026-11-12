@@ -6,9 +6,9 @@ viz_type: table
 params:
   datasource: 5__table
   viz_type: table
+  slice_id: 7
   query_mode: raw
   groupby: []
-  time_grain_sqla: P1D
   temporal_columns_lookup: {}
   metrics: []
   all_columns:
@@ -23,53 +23,57 @@ params:
   percent_metrics: []
   adhoc_filters: []
   order_by_cols: []
-  order_desc: true
   row_limit: 50
-  server_page_length: 10
   table_timestamp_format: smart_date
   allow_render_html: true
   column_config:
-    "\u524D30\u5929\u5E73\u5747":
-      d3NumberFormat: ',d'
     "\u524D30\u5929\u6700\u4F4E":
-      d3NumberFormat: ',d'
-    "\u524D10\u5929\u6700\u9AD8":
-      d3NumberFormat: ',d'
-    "\u96D911\u552E\u50F9":
       d3NumberFormat: ',d'
     "\u6BD4\u524D30\u5929\u6700\u4F4E":
       d3NumberFormat: ',d'
+      horizontalAlign: center
+    "\u96D911\u552E\u50F9":
+      d3NumberFormat: ',d'
+    "\u5E73\u53F0\u540D\u7A31":
+      horizontalAlign: center
+    "\u5206\u985E":
+      horizontalAlign: center
+    "\u5546\u54C1\u540D\u7A31":
+      horizontalAlign: center
+    "\u96D911\u524D\u5148\u6F32\u50F9":
+      horizontalAlign: center
+    "\u5224\u65B7":
+      horizontalAlign: center
   show_cell_bars: false
   color_pn: true
-  comparison_color_scheme: Green
   conditional_formatting: []
-  comparison_type: values
   extra_form_data: {}
   dashboards:
   - 1
 query_context: "{\"datasource\":{\"id\":5,\"type\":\"table\"},\"force\":false,\"queries\"\
-  :[{\"filters\":[],\"extras\":{\"time_grain_sqla\":\"P1D\",\"having\":\"\",\"where\"\
-  :\"\"},\"applied_time_extras\":{},\"columns\":[\"\u5E73\u53F0\u540D\u7A31\",\"\u5206\
-  \u985E\",\"\u5546\u54C1\u540D\u7A31\",\"\u524D30\u5929\u6700\u4F4E\",\"\u96D911\u552E\
-  \u50F9\",\"\u6BD4\u524D30\u5929\u6700\u4F4E\",\"\u5224\u65B7\",\"\u96D911\u524D\u5148\
-  \u6F32\u50F9\"],\"orderby\":[],\"annotation_layers\":[],\"row_limit\":50,\"series_limit\"\
-  :0,\"order_desc\":true,\"url_params\":{},\"custom_params\":{},\"custom_form_data\"\
-  :{},\"post_processing\":[],\"time_offsets\":[]}],\"form_data\":{\"datasource\":\"\
-  5__table\",\"viz_type\":\"table\",\"query_mode\":\"raw\",\"groupby\":[],\"time_grain_sqla\"\
-  :\"P1D\",\"temporal_columns_lookup\":{},\"metrics\":[],\"all_columns\":[\"\u5E73\
-  \u53F0\u540D\u7A31\",\"\u5206\u985E\",\"\u5546\u54C1\u540D\u7A31\",\"\u524D30\u5929\
-  \u6700\u4F4E\",\"\u96D911\u552E\u50F9\",\"\u6BD4\u524D30\u5929\u6700\u4F4E\",\"\u5224\
-  \u65B7\",\"\u96D911\u524D\u5148\u6F32\u50F9\"],\"percent_metrics\":[],\"adhoc_filters\"\
-  :[],\"order_by_cols\":[],\"order_desc\":true,\"row_limit\":50,\"server_page_length\"\
-  :10,\"table_timestamp_format\":\"smart_date\",\"allow_render_html\":true,\"column_config\"\
-  :{\"\u524D30\u5929\u5E73\u5747\":{\"d3NumberFormat\":\",d\"},\"\u524D30\u5929\u6700\
-  \u4F4E\":{\"d3NumberFormat\":\",d\"},\"\u524D10\u5929\u6700\u9AD8\":{\"d3NumberFormat\"\
-  :\",d\"},\"\u96D911\u552E\u50F9\":{\"d3NumberFormat\":\",d\"},\"\u6BD4\u524D30\u5929\
-  \u6700\u4F4E\":{\"d3NumberFormat\":\",d\"}},\"show_cell_bars\":false,\"color_pn\"\
-  :true,\"comparison_color_scheme\":\"Green\",\"conditional_formatting\":[],\"comparison_type\"\
-  :\"values\",\"extra_form_data\":{},\"dashboards\":[1],\"force\":false,\"result_format\"\
-  :\"json\",\"result_type\":\"full\",\"include_time\":false},\"result_format\":\"\
-  json\",\"result_type\":\"full\"}"
+  :[{\"filters\":[],\"extras\":{\"having\":\"\",\"where\":\"\"},\"applied_time_extras\"\
+  :{},\"columns\":[\"\u5E73\u53F0\u540D\u7A31\",\"\u5206\u985E\",\"\u5546\u54C1\u540D\
+  \u7A31\",\"\u524D30\u5929\u6700\u4F4E\",\"\u96D911\u552E\u50F9\",\"\u6BD4\u524D\
+  30\u5929\u6700\u4F4E\",\"\u5224\u65B7\",\"\u96D911\u524D\u5148\u6F32\u50F9\"],\"\
+  orderby\":[],\"annotation_layers\":[],\"row_limit\":50,\"series_limit\":0,\"order_desc\"\
+  :true,\"url_params\":{},\"custom_params\":{},\"custom_form_data\":{},\"post_processing\"\
+  :[],\"time_offsets\":[]}],\"form_data\":{\"datasource\":\"5__table\",\"viz_type\"\
+  :\"table\",\"slice_id\":7,\"query_mode\":\"raw\",\"groupby\":[],\"temporal_columns_lookup\"\
+  :{},\"metrics\":[],\"all_columns\":[\"\u5E73\u53F0\u540D\u7A31\",\"\u5206\u985E\"\
+  ,\"\u5546\u54C1\u540D\u7A31\",\"\u524D30\u5929\u6700\u4F4E\",\"\u96D911\u552E\u50F9\
+  \",\"\u6BD4\u524D30\u5929\u6700\u4F4E\",\"\u5224\u65B7\",\"\u96D911\u524D\u5148\u6F32\
+  \u50F9\"],\"percent_metrics\":[],\"adhoc_filters\":[],\"order_by_cols\":[],\"row_limit\"\
+  :50,\"table_timestamp_format\":\"smart_date\",\"allow_render_html\":true,\"column_config\"\
+  :{\"\u524D30\u5929\u6700\u4F4E\":{\"d3NumberFormat\":\",d\"},\"\u6BD4\u524D30\u5929\
+  \u6700\u4F4E\":{\"d3NumberFormat\":\",d\",\"horizontalAlign\":\"center\"},\"\u96D9\
+  11\u552E\u50F9\":{\"d3NumberFormat\":\",d\"},\"\u5E73\u53F0\u540D\u7A31\":{\"horizontalAlign\"\
+  :\"center\"},\"\u5206\u985E\":{\"horizontalAlign\":\"center\"},\"\u5546\u54C1\u540D\
+  \u7A31\":{\"horizontalAlign\":\"center\"},\"\u96D911\u524D\u5148\u6F32\u50F9\":{\"\
+  horizontalAlign\":\"center\"},\"\u5224\u65B7\":{\"horizontalAlign\":\"center\"}},\"\
+  show_cell_bars\":false,\"color_pn\":true,\"conditional_formatting\":[],\"extra_form_data\"\
+  :{},\"dashboards\":[1],\"force\":false,\"result_format\":\"json\",\"result_type\"\
+  :\"full\",\"include_time\":false},\"result_format\":\"json\",\"result_type\":\"\
+  full\"}"
 cache_timeout: null
 uuid: 7d6cfdbb-5621-4cb2-855a-9363a69d5488
 version: 1.0.0
