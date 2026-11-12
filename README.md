@@ -693,7 +693,7 @@ ORDER BY 型號, 售價;
 | 資料倉儲 | — | BigQuery：Raw → Fact / Dim → Mart |
 | 視覺化 | Superset 架設與比價 dashboard、Looker Studio | Superset 數據分析、規格分析圖表 |
 
-共同完成：需求討論、資料格式對齊、比價分析、成果報告。momo 四類爬蟲程式在組員 repo，momo 氣炸鍋（`app/special_topic3C/momo_search.py`）和本 repo 的爬蟲共用排程與配件規則，放在本 repo；BigQuery 同步程式（`app/bigquery_sync.py`、`bigquery/sql/`）與 momo stack 設定（`momo/`）因為要和 Airflow、VM 一起部署，放在本 repo。
+共同完成：需求討論、資料格式對齊、比價分析、成果報告。momo 四類爬蟲程式原本在組員 repo，已搬進本 repo 的 `momo/`（`momo/crawler/`、歷史資料 `momo/data/`）；momo 氣炸鍋（`app/special_topic3C/momo_search.py`）和本 repo 的爬蟲共用排程與配件規則，放在本 repo；BigQuery 同步程式（`app/bigquery_sync.py`、`bigquery/sql/`）與 momo stack 設定（`momo/docker-compose-momo.yml`）因為要和 Airflow、VM 一起部署，放在本 repo。
 
 ## 目前進度
 
