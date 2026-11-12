@@ -1,6 +1,6 @@
 # TK3C 比價引擎（3C 搜索引擎）
 
-爬取燦坤（tk3c.com）、PChome 24h 與 Yahoo 購物中心的冰箱、電視、氣炸鍋、掃地機器人、洗衣機，以及 momo 的氣炸鍋分類排名與價格，記錄每日價格歷史，可用於比較不同平台的價格與後續查詢價格走勢。
+爬取燦坤（tk3c.com）、PChome 24h 與 Yahoo 購物中心的冰箱、電視、氣炸鍋、掃地機器人、洗衣機，以及 momo 的氣炸鍋分類排名與價格（momo 自 2026/11/08 起擋下程式存取），記錄每日價格歷史，可用於比較不同平台的價格與後續查詢價格走勢。資料每天同步到 BigQuery，用 Superset、Looker Studio 呈現。
 
 ## 功能
 
@@ -10,15 +10,18 @@
   |---|---|---|
   | 燦坤 | 冰箱、電視、氣炸鍋、掃地機器人、洗衣機 | 搜尋頁的排行榜區塊，不足 20 筆再從搜尋結果補齊 |
   | PChome | 冰箱、電視、氣炸鍋、掃地機器人、洗衣機 | 搜尋 API 依銷量排序，以館別代碼與分類代碼排除配件 |
-  | momo | 氣炸鍋 | 搜尋頁依銷量排序（只取 momo「氣炸鍋」分類），排除廣告商品 |
+  | momo | 氣炸鍋 | 搜尋頁依銷量排序（只取 momo「氣炸鍋」分類），排除廣告商品；2026/11/08 起網站回應 403 擋下程式存取，保留歷史資料、不繞過防護 |
   | Yahoo 購物中心 | 冰箱、電視、氣炸鍋、掃地機器人、洗衣機 | 搜尋頁依銷量排序，只保留 Yahoo 分類符合的商品（逐層比對分類路徑，例如電視要在「電視 > 電視」，不含「電視 > 電視配件」），再用燦坤的配件規則過濾 |
 
   各平台共用燦坤爬蟲的配件過濾規則（排除關鍵字、名稱需有容量），標準一致
 - 追蹤清單：固定一批熱門型號（`watchlist`，目前 85 個），每天到燦坤、PChome、Yahoo 用型號搜尋，記錄各平台最低價（`watch_price_daily`），見[追蹤清單](#追蹤清單)
 - 使用 MySQL 儲存商品主檔與每日價格歷史，方便追蹤價格變化趨勢
 - 使用 Airflow 每天自動排程爬取（DockerOperator 啟動爬蟲 container），失敗會自動重試，可在網頁上查看每次執行的狀態與 log
-- 使用 Redash 視覺化兩個平台的價格走勢、價格比較、排行榜、降價商品與評價
-- 使用 Docker Compose（開發）與 Docker Swarm（部署）容器化所有服務
+- 每天爬完自動檢查各平台、分類有沒有抓到資料，0 筆或沒執行就讓 Airflow task 變紅
+- 每天把資料經 GCS 同步到 BigQuery 資料倉儲（Raw → Fact / Dim → DataMart）
+- 使用 Superset 建立「家電比價」dashboard（每日比價、長期分析、規格分析），另有 Looker Studio 報表
+- 使用 FastAPI 提供商品、價格歷史與追蹤清單比價查詢
+- 使用 Docker Compose（開發）與 Docker Swarm（部署）容器化所有服務，GitHub Actions 自動 build 並推送 image
 - 部署在 GCP Compute Engine VM 上 24 小時執行，筆電關機也會每天自動爬取
 
 ## 技術架構
@@ -27,8 +30,10 @@
 - **排程**：Airflow（swarm 部署）；Celery + RabbitMQ 保留給手動補爬，Flower 監控任務
 - **API**：FastAPI
 - **資料庫**：MySQL 8
-- **視覺化**：Redash
-- **部署**：Docker Compose（本機開發）/ Docker Swarm（GCP Compute Engine VM）
+- **資料倉儲**：GCS（raw CSV）→ BigQuery（Raw → Fact / Dim → DataMart），Airflow 每日同步
+- **視覺化**：Superset（MySQL + BigQuery）、Looker Studio（BigQuery）；早期用 Redash，已停用
+- **部署**：Docker Compose（本機開發）/ Docker Swarm（GCP Compute Engine VM），GitHub Actions 自動 build 並推上 Docker Hub
+- **GCP**：Compute Engine、Firewall、IAM（VM service account `tk3c-pipeline`）、Secret Manager（資料庫密碼）、GCS（資料與 Airflow log）、BigQuery、Looker Studio、Billing
 - **資料表設計**：
   - `products`：商品主檔（平台、商品編號、名稱、分類等；平台 + 商品編號為唯一鍵）
   - `price_history`：每日價格歷史（依商品編號關聯，記錄每次爬取的價格、排名與評價；同一天重跑只保留最後一次）
@@ -46,7 +51,7 @@ tk3c-price-tracker/
 │   ├── main.py                    # FastAPI 查詢 API（商品、價格歷史、追蹤清單比價）
 │   ├── celery_app.py              # Celery 設定（beat 排程在 swarm 已停用，改由 Airflow 負責）
 │   ├── tasks.py                   # Celery 爬蟲任務（含自動重試）
-│   ├── producer.py                # 把 8 個爬蟲任務送進 RabbitMQ，給 Airflow DockerOperator 呼叫
+│   ├── producer.py                # 把 19 個爬蟲任務（每個網站一條 chain）送進 RabbitMQ，給 Airflow DockerOperator 呼叫
 │   ├── run_crawl.py               # 不經過 RabbitMQ，直接執行單一平台 + 分類的爬蟲（手動測試用）
 │   ├── db.py                      # 資料庫連線與寫入
 │   ├── watchlist.py               # 追蹤清單：讀 watchlist → 各平台用型號搜尋 → 寫入 watch_price_daily
@@ -69,19 +74,21 @@ tk3c-price-tracker/
 │   └── migrations/                # 既有資料庫的結構變更
 ├── data/                          # 爬蟲單獨執行時輸出的 CSV
 ├── airflow/
-│   ├── dags/tk3c_producer.py      # 每日 Producer DAG
-│   ├── dags/tk3c_bigquery_sync.py # 每日 BigQuery 同步 DAG（21:30）
+│   ├── dags/tk3c_producer.py      # 每日 Producer DAG（20:00）
+│   ├── dags/tk3c_bigquery_sync.py # 每日 BigQuery 同步＋爬蟲結果檢查 DAG（21:30）
+│   ├── dags/momo_producer.py      # 組員 momo 四類爬蟲的 DAG（20:30）
+│   ├── create_momo_role.py        # 建立 Airflow 角色 momo（組員帳號只看得到 momo_producer）
 │   ├── Dockerfile                 # 以課程的 tibame_dataflow image 為底，加入本專題的 DAG
 │   └── docker-compose-airflow.yml # Airflow swarm stack
+├── momo/docker-compose-momo.yml   # 組員 momo 爬蟲的 swarm stack（獨立 RabbitMQ、Flower 5556、phpMyAdmin 8081）
 ├── bigquery/sql/                  # BigQuery 分層：01 raw 外部表、02 fact、03 載入去重、04 dim、05 mart、06～08 追蹤清單
 ├── superset/
 │   ├── Dockerfile                 # 官方 Superset 5.0 image 加裝 MySQL（pymysql）與 BigQuery（sqlalchemy-bigquery）driver
 │   ├── superset_config.py         # SECRET_KEY、SQLite metadata、繁體中文介面
 │   ├── docker-compose-superset.yml # Superset swarm stack（port 8088）
 │   └── export/                    # 匯出的 dashboard、圖表、dataset 設定（YAML）
-├── redash/
-│   ├── queries/                   # 儀表板 6 個查詢的 SQL
-│   └── setup_redash.py            # 透過 Redash API 建立資料來源、查詢、圖表與儀表板
+├── redash/                        # 早期 Redash 儀表板的查詢與建立腳本（已停用）
+├── .github/workflows/docker-image.yml # GitHub Actions：檢查語法、試 build；push tag 時推 image 上 Docker Hub
 ├── Dockerfile
 ├── docker-compose.yml             # 開發用（docker compose）
 ├── docker-compose-swarm.yml       # 部署用（docker swarm）
@@ -125,11 +132,11 @@ tk3c-price-tracker/
    python -m app.special_topic3C.yahoo_search 氣炸鍋
    ```
 
-5. 既有資料庫要套用 `database/migrations/` 裡的結構變更時：
+5. 既有資料庫要套用 `database/migrations/` 裡的結構變更時，依編號執行（001～006；004、005 需要 momo 組員的 `mydb.momo_goods_daily` 已存在）：
 
    ```bash
-   docker exec -i tk3c_mysql sh -c 'mysql -uroot -p"$MYSQL_ROOT_PASSWORD"' < database/migrations/001_add_platform.sql
-   docker exec -i tk3c_mysql sh -c 'mysql -uroot -p"$MYSQL_ROOT_PASSWORD"' < database/migrations/002_add_rating.sql
+   docker exec -i tk3c_mysql sh -c 'mysql --default-character-set=utf8mb4 -uroot -p"$MYSQL_ROOT_PASSWORD"' < database/migrations/001_add_platform.sql
+   # 002_add_rating、003_add_goods_daily、004_add_all_goods_daily_view、005_filter_momo_in_all_goods_daily、006_add_watchlist 同樣方式
    ```
 
 ## 常用指令
@@ -170,13 +177,16 @@ docker logs --tail 20 tk3c_mysql
 
 每日排程由 Airflow 負責（見下方「Airflow 排程」）。以下是 Celery 版的手動補爬方式，Airflow 上也可以直接在網頁重跑（見「Airflow 排程」）。
 
-排程時間錯過、或任務失敗時，可以手動送出任務（只補跑部分分類時，刪掉不需要的任務名稱即可）：
+排程時間錯過、或任務失敗時，可以手動送出任務：
 
 ```bash
+# 全部 19 個任務（和 Airflow 每天跑的相同，每個網站依序爬）
+docker exec tk3c_celery_worker python -m app.producer
+
+# 只補跑部分分類：列出要跑的任務名稱（完整清單見 app/tasks.py）
 docker exec tk3c_celery_worker python -c "
 from app.celery_app import app
-for t in ['crawl_fridge', 'crawl_tv', 'crawl_airfryer', 'crawl_robotvacuum',
-          'crawl_pchome_fridge', 'crawl_pchome_tv', 'crawl_pchome_airfryer', 'crawl_pchome_robotvacuum']:
+for t in ['crawl_washer', 'crawl_pchome_washer', 'crawl_yahoo_washer', 'crawl_watch_pchome']:
     print(t, app.send_task(t).id)"
 ```
 
@@ -212,8 +222,11 @@ DELETE FROM products WHERE id = <商品 id>;
 | phpMyAdmin | http://localhost:8080 |
 | Flower（Celery 任務監控） | http://localhost:5555 |
 | RabbitMQ 管理介面 | http://localhost:15672 |
-| Redash 儀表板 | http://localhost:5005/dashboards/1-tk3c- |
 | Airflow（帳號 admin，密碼見 `.env` 的 `AIRFLOW_ADMIN_PASSWORD`） | http://localhost:8090 |
+| Superset（只在 VM，用 SSH tunnel 連，見[Superset 視覺化](#superset-視覺化)） | http://localhost:8088 |
+| momo 組員的 Flower / phpMyAdmin（只在 VM） | http://localhost:5556 、 http://localhost:8081 |
+
+API（8001）沒有開防火牆，在 VM 上要用 SSH tunnel：`gcloud compute ssh consumer-electronics-price-search-engine --zone us-east1-c -- -N -L 8001:localhost:8001`。
 
 ## Docker Swarm 部署
 
@@ -273,12 +286,8 @@ docker stack services tk3c
 # 查看爬蟲任務執行結果與錯誤
 docker service logs --since 1h tk3c_celery-worker 2>&1 | grep -E "succeeded|raised|ERROR"
 
-# 手動觸發爬蟲（補跑當天資料）
-docker exec $(docker ps -q -f name=tk3c_celery-worker) python -c "
-from app.celery_app import app
-for t in ['crawl_fridge', 'crawl_tv', 'crawl_airfryer', 'crawl_robotvacuum',
-          'crawl_pchome_fridge', 'crawl_pchome_tv', 'crawl_pchome_airfryer', 'crawl_pchome_robotvacuum']:
-    print(t, app.send_task(t).id)"
+# 手動觸發爬蟲（補跑當天全部 19 個任務；只補部分分類見上方「手動觸發爬蟲」）
+docker exec $(docker ps -q -f name=tk3c_celery-worker) python -m app.producer
 
 # 進入 MySQL
 docker exec -it $(docker ps -q -f name=tk3c_mysql) sh -c 'mysql --default-character-set=utf8mb4 -uroot -p"$MYSQL_ROOT_PASSWORD" "$MYSQL_DATABASE"'
@@ -298,7 +307,7 @@ Airflow（每天 20:00）→ DockerOperator 執行 python -m app.producer → Ra
 
 - 參考課程 `dataflow` 的 `ProducerScheduler`：image 以 `linsamtw/tibame_dataflow:0.0.7`（Airflow 2.7.3）為底，只加入本專題的 DAG；用 DockerOperator 啟動 `pennyliu32/tk3c-price-tracker` 執行 producer，跑完自動刪除 container
 - producer container 和 `tk3c_rabbitmq` 都在 `tk3c_attachable_network`，所以送得進任務（RabbitMQ 同時也在 `tk3c_swarm_network` 給 celery-worker 用）
-- 每個網站各送一條 Celery chain（共 19 個任務）：不同網站同時跑，同一個網站的分類依序跑，最後跑該網站的追蹤清單（燦坤 5 類約 6 分鐘＋追蹤清單約 10 分鐘，其他網站各約 5 分鐘），進度看 Flower（http://localhost:5555）
+- 每個網站各送一條 Celery chain（共 19 個任務）：不同網站同時跑，同一個網站的分類依序跑，最後跑該網站的追蹤清單（燦坤 5 類約 12 分鐘＋追蹤清單約 20 分鐘，約 20:35 跑完；PChome、Yahoo 各約 5～7 分鐘），進度看 Flower（http://localhost:5555）
 - Airflow 只負責送任務，送成功就是綠色；爬蟲失敗的重試在 `app/tasks.py`（隔 5 分鐘，最多 3 次）
 - metadata 存在本專題 MySQL 的 `airflow` 資料庫（專用帳號 `airflow`，只能存取這個資料庫）
 - 帳密、金鑰都由 `.env` 的 `AIRFLOW_*` 在部署時帶入，不會打包進 image
@@ -344,8 +353,8 @@ docker exec -e MYSQL_READER_USER=superset_reader -e MYSQL_PASSWORD_SECRET=tk3c-m
 # 只重跑某一個分類：直接執行該分類（不經過 RabbitMQ）
 docker exec $(docker ps -q -f name=tk3c_celery-worker) python -m app.run_crawl tk3c 冰箱
 
-# 專題 image 升版後，Airflow 要跟著改用新版（只需重新部署 Airflow stack）
-AIRFLOW_IMAGE_VERSION=0.0.2 TK3C_IMAGE_VERSION=<新版本> \
+# 專題 image 升版後，Airflow 要跟著改用新版（只需重新部署 Airflow stack；AIRFLOW_IMAGE_VERSION 填目前的 Airflow image 版本）
+AIRFLOW_IMAGE_VERSION=<目前版本> TK3C_IMAGE_VERSION=<新版本> \
   docker stack deploy --with-registry-auth -c airflow/docker-compose-airflow.yml tk3c-airflow
 ```
 
@@ -359,7 +368,7 @@ AIRFLOW_IMAGE_VERSION=0.0.2 TK3C_IMAGE_VERSION=<新版本> \
 |---|---|
 | VM 名稱 | `consumer-electronics-price-search-engine` |
 | 機型 | e2-standard-2（2 vCPU、8 GB RAM）＋ 4 GB swap |
-| 磁碟 | 24 GB |
+| 磁碟 | 40 GB（原本 25 GB，加了 Superset 後擴充） |
 | Swarm | 單節點，節點加上 `airflow=true` 標籤 |
 | Image | 從 Docker Hub 拉 `pennyliu32/tk3c-price-tracker`、`pennyliu32/tk3c-airflow` |
 
@@ -585,50 +594,9 @@ docker exec $C superset import-dashboards -p /tmp/dashboards.zip -u admin
 
 匯入後到「Settings → Database Connections」編輯 MySQL 連線，把 URI 裡的 `XXXXXXXXXX` 換回 `SUPERSET_DB_PASSWORD`；BigQuery 連線沒有密碼，匯入後直接可用。
 
-## Redash 視覺化
+## Redash 視覺化（已停用）
 
-使用課程部署的 Redash（swarm stack `redash`，http://localhost:5005），連到本專案的 MySQL。
-
-> 資料庫搬到 GCP VM 後，筆電上的 Redash 已移除，視覺化改用 Superset（見上方）。以下為原本在本機的設定方式。
-
-### 儀表板內容
-
-| 圖表 | 類型 | 查詢 |
-|---|---|---|
-| 每日平均價格走勢（用「分類」篩選） | 折線圖 | `q1_trend.sql` |
-| 燦坤 vs PChome 各分類價格比較 | 長條圖 | `q2_compare.sql` |
-| 今日 Top 20 排行榜（可篩選分類、平台） | 表格 | `q3_ranking.sql` |
-| 最近 14 天降價商品 | 表格 | `q4_price_drop.sql` |
-| PChome 銷量排名 vs 評價 | 散佈圖 | `q5_rating.sql` |
-| 爬蟲每日執行狀態（正常每天 8 筆） | 堆疊長條圖 | `q6_crawl_status.sql` |
-
-- 欄位名稱加上 `::filter`（例如 `分類::filter`）會變成篩選器，儀表板開啟了篩選器合併，最上方的「分類」會同時套用到所有圖表
-- 查詢每天 21:30 自動重新整理（Airflow 的爬蟲約 20:05 跑完）；Redash 的排程時間以 UTC 儲存，所以腳本裡寫 `13:30`
-
-### 連線方式
-
-- Redash 和專題在不同的 swarm stack，透過本機 port 連線：`host.docker.internal:13306`
-- 使用唯讀帳號 `redash_reader`（只有 SELECT 權限），密碼存在 `.env` 的 `REDASH_DB_PASSWORD`
-- Redash 10 的 MySQL 驅動不支援 MySQL 8 預設的 `caching_sha2_password`，所以這個帳號使用 `mysql_native_password`
-
-### 重新建立儀表板
-
-Redash 重建或想還原成預設版面時，第一次需要先在 http://localhost:5005/setup 建立管理員帳號，再執行：
-
-```bash
-# 1. 建立唯讀帳號（只需一次；已存在會略過建立）
-set -a; source .env; set +a
-docker exec -e RP="$REDASH_DB_PASSWORD" tk3c_mysql sh -c 'mysql -uroot -p"$MYSQL_ROOT_PASSWORD" -e "
-CREATE USER IF NOT EXISTS '\''redash_reader'\''@'\''%'\'' IDENTIFIED WITH mysql_native_password BY '\''$RP'\'';
-GRANT SELECT ON tk3c_price_tracker.* TO '\''redash_reader'\''@'\''%'\'';"'
-
-# 2. 建立資料來源、查詢、圖表與儀表板（API Key 在 Redash 個人頁面）
-REDASH_API_KEY=<你的 API Key> python3 redash/setup_redash.py
-```
-
-swarm 版的 MySQL container 名稱帶亂數，第 1 步的 `tk3c_mysql` 改成 `$(docker ps -q -f name=tk3c_mysql)`。
-
-重複執行腳本不會產生重複的查詢或儀表板，同名的會直接更新（在 Redash 網頁上手動改過的查詢內容會被覆蓋）。
+專題初期用課程部署的 Redash 連本機 MySQL，做了 6 張圖（價格走勢、燦坤 vs PChome 比價、排行榜、降價商品、評價散佈圖、爬蟲執行狀態）。資料庫搬到 GCP VM 後已移除，改用 Superset（見上方）。當時的查詢 SQL 與建立腳本保留在 `redash/`（`queries/`、`setup_redash.py`），需要時可參考。
 
 ## 追蹤清單
 
@@ -687,7 +655,7 @@ docker exec -i $(docker ps -q -f name=tk3c_mysql) sh -c 'mysql --default-charact
 uv run python -m app.goods_daily
 ```
 
-`mydb.momo_goods_daily` 不搬進 `goods_daily`，而是用 view `all_goods_daily` 把兩張表合在一起，momo 每天 20:30 爬完就查得到，不用另外同步：
+`mydb.momo_goods_daily` 不搬進 `goods_daily`，而是用 view `all_goods_daily` 把兩張表合在一起，momo 每天 20:30 爬完就查得到，不用另外同步（momo 自 2026/11/08 起擋下程式存取，四類資料停在 11/07）：
 
 ```bash
 # 建立 view（只要跑一次；mydb.momo_goods_daily 要先存在）
@@ -697,7 +665,7 @@ docker exec -i $(docker ps -q -f name=tk3c_mysql) sh -c 'mysql --default-charact
 
 - 欄位和 `goods_daily` 相同；momo 四類資料的 `平台` 為 `momo`、`排名` 為 NULL、`連結` 由商品編號組成
 - `momo_goods_daily` 的文字欄位 collation（`utf8mb4_unicode_ci`）在 view 裡統一轉成 `utf8mb4_0900_ai_ci`，double 欄位轉成 INT
-- view 為 `SQL SECURITY DEFINER`，Redash / Superset 的唯讀帳號只要有 `tk3c_price_tracker.all_goods_daily` 的 SELECT 權限，不需要 `mydb` 的權限
+- view 為 `SQL SECURITY DEFINER`，Superset 的唯讀帳號只要有 `tk3c_price_tracker.all_goods_daily` 的 SELECT 權限，不需要 `mydb` 的權限
 - `momo_goods_daily` 整張重新匯入的期間，view 查不到 momo 四類資料
 - momo 四類資料在 view 裡套用與本專案相同的清洗規則（`database/migrations/005_filter_momo_in_all_goods_daily.sql`）：依名稱修正冰箱／洗衣機的分類並去除重複（原始資料有分類錯誤，例如「洗衣機」約一半是冰箱）、名稱需有容量、排除配件關鍵字；`mydb.momo_goods_daily` 原始資料不變
 
@@ -716,20 +684,19 @@ ORDER BY 型號, 售價;
 - [x] 新增 PChome 四大分類爬蟲與評價
 - [x] 燦坤、PChome 新增洗衣機；新增 momo、Yahoo 購物中心氣炸鍋爬蟲
 - [x] Yahoo 購物中心擴充為五大分類（冰箱、電視、氣炸鍋、掃地機器人、洗衣機）
-- [x] MySQL 資料庫架構設計（products + price_history + crawl_log）
+- [x] MySQL 資料庫架構設計（products + price_history + crawl_log，之後加上 goods_daily、watchlist / watch_price_daily）
 - [x] 排程自動化（Celery + RabbitMQ + Flower），失敗自動重試
 - [x] 使用 Docker Swarm 部署
 - [x] 使用 Airflow 取代 Celery beat 排程每日爬蟲
-- [x] 使用 Redash 視覺化價格走勢與比價
+- [x] 使用 Redash 視覺化價格走勢與比價（初期，搬到 GCP 後改用 Superset）
 - [x] 部署到 GCP Compute Engine VM，24 小時自動排程爬取
+- [x] 每日 mysqldump 備份（保留 14 天）＋ VM 磁碟每日快照
 - [x] 整合 momo 四類資料（view `all_goods_daily`），並在 view 裡修正分類、排除配件
-- [x] 使用 Superset 建立「家電比價」dashboard（每日比價、長期分析兩個分頁）
+- [x] 使用 Superset 建立「家電比價」dashboard（每日比價、長期分析、規格分析三個分頁，含 BigQuery DataMart 圖表）
 - [x] 追蹤清單：85 個熱門型號每天到燦坤、PChome、Yahoo 用型號搜尋，提供 API、同步到 BigQuery
 - [x] Looker Studio 報表「家電價格總覽」（BigQuery fact / mart）
 - [x] BigQuery 資料倉儲（組員負責）：GCS raw → fact / dim → DataMart，Airflow 每日同步
-
-## 未來規劃
-
-- Superset 用 BigQuery DataMart 建圖表、Looker Studio 報表
-- momo 自 2026/11/08 起擋下程式存取（403），目前保留歷史資料、不繞過防護
-- PChome 商品名稱沒有括號的型號抓取規則（目前約一半抓不到型號）
+- [x] FastAPI 追蹤清單查詢 API（`/watchlist`、`/watchlist/compare`、`/watchlist/{型號}/history`）
+- [x] GitHub Actions：PR／main 檢查語法並試 build，push tag 自動推 image 上 Docker Hub
+- [x] Airflow task log 改存 GCS（remote logging），重新部署後 log 不會消失
+- [x] 每日爬蟲結果檢查（`check_crawl_results`），0 筆或沒執行就讓 Airflow task 變紅
