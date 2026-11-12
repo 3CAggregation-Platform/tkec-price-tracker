@@ -1,4 +1,4 @@
-# 組員 momo 爬蟲（bihruwang/ecommerce_crawler）在 GCP VM 上的 swarm stack
+# 組員 momo 爬蟲（程式碼在 momo/crawler，原 bihruwang/ecommerce_crawler）在 GCP VM 上的 swarm stack
 #
 # 由組員自行部署 / 更新（在自己的 clone 裡建立 momo/.env，內容見 README「組員 momo 爬蟲」）：
 #   cd momo && set -a; source .env; set +a

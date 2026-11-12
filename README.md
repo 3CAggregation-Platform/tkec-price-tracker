@@ -80,7 +80,10 @@ tk3c-price-tracker/
 │   ├── create_momo_role.py        # 建立 Airflow 角色 momo（組員帳號只看得到 momo_producer）
 │   ├── Dockerfile                 # 以課程的 tibame_dataflow image 為底，加入本專題的 DAG
 │   └── docker-compose-airflow.yml # Airflow swarm stack
-├── momo/docker-compose-momo.yml   # 組員 momo 爬蟲的 swarm stack（獨立 RabbitMQ、Flower 5556、phpMyAdmin 8081）
+├── momo/                         # 組員 momo 四類爬蟲（原 bihruwang/ecommerce_crawler，說明見 momo/README.md）
+│   ├── crawler/                   # 爬蟲、Celery 任務、producer
+│   ├── data/                      # 2026/09/12～11/07 每日 CSV（11/08 起 momo 擋下程式存取）
+│   └── docker-compose-momo.yml    # swarm stack（獨立 RabbitMQ、Flower 5556、phpMyAdmin 8081）
 ├── bigquery/sql/                  # BigQuery 分層：01 raw 外部表、02 fact、03 載入去重、04 dim、05 mart、06～08 追蹤清單
 ├── superset/
 │   ├── Dockerfile                 # 官方 Superset 5.0 image 加裝 MySQL（pymysql）與 BigQuery（sqlalchemy-bigquery）driver
