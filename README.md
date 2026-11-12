@@ -80,7 +80,10 @@ tk3c-price-tracker/
 │   ├── create_momo_role.py        # 建立 Airflow 角色 momo（組員帳號只看得到 momo_producer）
 │   ├── Dockerfile                 # 以課程的 tibame_dataflow image 為底，加入本專題的 DAG
 │   └── docker-compose-airflow.yml # Airflow swarm stack
-├── momo/docker-compose-momo.yml   # 組員 momo 爬蟲的 swarm stack（獨立 RabbitMQ、Flower 5556、phpMyAdmin 8081）
+├── momo/                         # 組員 momo 四類爬蟲（原 bihruwang/ecommerce_crawler，說明見 momo/README.md）
+│   ├── crawler/                   # 爬蟲、Celery 任務、producer
+│   ├── data/                      # 2026/09/12～11/07 每日 CSV（11/08 起 momo 擋下程式存取）
+│   └── docker-compose-momo.yml    # swarm stack（獨立 RabbitMQ、Flower 5556、phpMyAdmin 8081）
 ├── bigquery/sql/                  # BigQuery 分層：01 raw 外部表、02 fact、03 載入去重、04 dim、05 mart、06～08 追蹤清單
 ├── superset/
 │   ├── Dockerfile                 # 官方 Superset 5.0 image 加裝 MySQL（pymysql）與 BigQuery（sqlalchemy-bigquery）driver
@@ -690,7 +693,7 @@ ORDER BY 型號, 售價;
 | 資料倉儲 | — | BigQuery：Raw → Fact / Dim → Mart |
 | 視覺化 | Superset 架設與比價 dashboard、Looker Studio | Superset 數據分析、規格分析圖表 |
 
-共同完成：需求討論、資料格式對齊、比價分析、成果報告。momo 四類爬蟲程式在組員 repo，momo 氣炸鍋（`app/special_topic3C/momo_search.py`）和本 repo 的爬蟲共用排程與配件規則，放在本 repo；BigQuery 同步程式（`app/bigquery_sync.py`、`bigquery/sql/`）與 momo stack 設定（`momo/`）因為要和 Airflow、VM 一起部署，放在本 repo。
+共同完成：需求討論、資料格式對齊、比價分析、成果報告。momo 四類爬蟲程式原本在組員 repo，已搬進本 repo 的 `momo/`（`momo/crawler/`、歷史資料 `momo/data/`）；momo 氣炸鍋（`app/special_topic3C/momo_search.py`）和本 repo 的爬蟲共用排程與配件規則，放在本 repo；BigQuery 同步程式（`app/bigquery_sync.py`、`bigquery/sql/`）與 momo stack 設定（`momo/docker-compose-momo.yml`）因為要和 Airflow、VM 一起部署，放在本 repo。
 
 ## 目前進度
 
