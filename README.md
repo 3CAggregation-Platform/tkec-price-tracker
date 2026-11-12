@@ -681,6 +681,20 @@ WHERE 抓取日期 = CURDATE() AND 型號 IN (
 ORDER BY 型號, 售價;
 ```
 
+## 團隊分工
+
+| 階段 | 劉維青（本 repo） | 汪碧茹（[bihruwang/ecommerce_crawler](https://github.com/bihruwang/ecommerce_crawler)） |
+|---|---|---|
+| 爬蟲 | 燦坤、PChome、Yahoo 五大類 | momo 冰箱、電視、洗衣機、掃地機器人、氣炸鍋 |
+| 資料格式 | 品牌型號統一、整合 view `all_goods_daily`、追蹤清單與比價 API | 制定兩邊共用的中文欄位資料格式 |
+| Docker Compose | 本機開發環境（MySQL、RabbitMQ、Celery、FastAPI） | — |
+| Docker Swarm | — | 改用 swarm stack 部署，各服務分開管理 |
+| GCP | Compute Engine、防火牆、IAM、Secret Manager、GCS、Airflow 排程 | — |
+| 資料倉儲 | — | BigQuery：Raw → Fact / Dim → Mart |
+| 視覺化 | Superset 架設與比價 dashboard、Looker Studio | Superset 數據分析、規格分析圖表 |
+
+共同完成：需求討論、資料格式對齊、比價分析、成果報告。momo 四類爬蟲程式在組員 repo，momo 氣炸鍋（`app/special_topic3C/momo_search.py`）和本 repo 的爬蟲共用排程與配件規則，放在本 repo；BigQuery 同步程式（`app/bigquery_sync.py`、`bigquery/sql/`）與 momo stack 設定（`momo/`）因為要和 Airflow、VM 一起部署，放在本 repo。
+
 ## 目前進度
 
 - [x] 完成燦坤四大分類（冰箱、電視、氣炸鍋、掃地機器人）的爬蟲程式
