@@ -28,25 +28,39 @@ FROM p
 GROUP BY crawl_date, category, model
 HAVING COUNT(*) >= 2;
 
--- 降價排行：每個平台最新一次爬蟲 vs 同一商品上一次的價格（7 天內）
+-- 降價排行（近 30 天）：最新價格 vs 30 天內第一次看到的價格
+-- 不用 30 天內最高價當基準，避免「先漲再降」也被算成降價
+-- 最新日期落後全部平台超過 3 天的平台（例如被擋的 momo）不列
 CREATE OR REPLACE TABLE `{project}.{dataset}.mart_price_drop`
-OPTIONS (description = '降價排行（各平台最新一次 vs 上一次）') AS
-WITH h AS (
+OPTIONS (description = '降價排行（最新價格 vs 30 天內第一次看到的價格）') AS
+WITH f AS (
   SELECT f.*,
-         LAG(price)      OVER (PARTITION BY platform, product_id ORDER BY crawl_date) AS prev_price,
-         LAG(crawl_date) OVER (PARTITION BY platform, product_id ORDER BY crawl_date) AS prev_date,
-         MAX(crawl_date) OVER (PARTITION BY platform) AS latest_date
+         MAX(crawl_date) OVER (PARTITION BY platform) AS latest_date,
+         MAX(crawl_date) OVER () AS all_latest
   FROM `{project}.{dataset}.fact_price_daily` f
+),
+base AS (
+  SELECT platform, product_id,
+         ARRAY_AGG(STRUCT(crawl_date, price) ORDER BY crawl_date LIMIT 1)[OFFSET(0)] AS first
+  FROM f
+  WHERE crawl_date >= DATE_SUB(latest_date, INTERVAL 30 DAY)
+    AND crawl_date < latest_date
+  GROUP BY platform, product_id
+),
+now AS (
+  SELECT * FROM f
+  WHERE crawl_date = latest_date
+    AND latest_date >= DATE_SUB(all_latest, INTERVAL 3 DAY)
 )
-SELECT d.platform_name, h.category, h.model, h.product_name, h.url,
-       h.prev_date, h.prev_price, h.crawl_date, h.price,
-       h.prev_price - h.price AS drop_amount,
-       ROUND(SAFE_DIVIDE(h.prev_price - h.price, h.prev_price), 3) AS drop_ratio
-FROM h
+SELECT d.platform_name, n.category, n.model, n.product_name, n.url,
+       b.first.crawl_date AS prev_date, b.first.price AS prev_price,
+       n.crawl_date, n.price,
+       b.first.price - n.price AS drop_amount,
+       ROUND(SAFE_DIVIDE(b.first.price - n.price, b.first.price), 3) AS drop_ratio
+FROM now n
+JOIN base b USING (platform, product_id)  
 JOIN `{project}.{dataset}.dim_platform` d USING (platform)
-WHERE h.crawl_date = h.latest_date
-  AND h.price < h.prev_price
-  AND DATE_DIFF(h.crawl_date, h.prev_date, DAY) <= 7;
+WHERE n.price < b.first.price;
 
 -- 價格變動統計：觀察 7 天以上的商品，變價次數與波動幅度
 CREATE OR REPLACE TABLE `{project}.{dataset}.mart_price_change_stats`
