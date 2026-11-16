@@ -118,6 +118,38 @@ services:
     networks:
       - tk3c_swarm_network
 
+  # 公開網站（app/web.py）：對外開 80 port，只能查追蹤清單的比價和價格走勢
+  # - 不讀 .env（有 root 密碼），只給唯讀帳號 web_reader 的連線資訊，帳號建立方式見 README「公開網站」
+  # - port 用 mode: host 直接綁在 VM 上，程式才拿得到訪客真正的 IP 做請求上限
+  #   （走 swarm 的 ingress 時看到的都是內部 IP，所有人會共用同一個上限）
+  web:
+    image: pennyliu32/tk3c-price-tracker:${DOCKER_IMAGE_VERSION}
+    command: uvicorn app.web:app --host 0.0.0.0 --port 8000 --no-server-header
+    environment:
+      DB_HOST: mysql
+      DB_PORT: 3306
+      MYSQL_USER: web_reader
+      MYSQL_PASSWORD: ${WEB_DB_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      TZ: Asia/Taipei
+    ports:
+      - target: 8000
+        published: 80
+        protocol: tcp
+        mode: host
+    deploy:
+      mode: replicated
+      replicas: 1  # 請求上限記在記憶體裡，多個副本會各算各的
+      restart_policy:
+        condition: any
+      resources:
+        limits:
+          memory: 256M
+      placement:
+        constraints: [node.role==manager]
+    networks:
+      - tk3c_swarm_network
+
   celery-worker:
     image: pennyliu32/tk3c-price-tracker:${DOCKER_IMAGE_VERSION}
     hostname: "worker.{{.Task.Slot}}"  # 固定 worker 名稱，Flower 不會再出現舊的 Offline worker

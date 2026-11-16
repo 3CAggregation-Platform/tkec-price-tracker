@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>家電比價</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%232f6fdb'/%3E%3Cpath d='M9 22V12m7 10V8m7 14v-6' stroke='white' stroke-width='3.5' stroke-linecap='round'/%3E%3C/svg%3E">
+<meta name="description" content="燦坤、PChome、Yahoo 購物中心的家電每日價格比較與歷史走勢">
+<style>
+  :root {
+    --bg: #f7f7f5; --surface: #ffffff; --text: #1d1d1b; --muted: #6b6b66;
+    --border: #e3e2dd; --accent: #2f6fdb; --good: #1f8a4c; --good-bg: #e6f4ec;
+    --c-tk3c: #d9480f; --c-pchome: #2f6fdb; --c-yahoo: #7b3fd0;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #161615; --surface: #1f1f1d; --text: #ecebe6; --muted: #a09f99;
+      --border: #34332f; --accent: #6c9cf0; --good: #5ccb8a; --good-bg: #1d3528;
+      --c-tk3c: #ff8a50; --c-pchome: #6c9cf0; --c-yahoo: #b18cf0;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font: 15px/1.55 system-ui, -apple-system, "Segoe UI", "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
+  }
+  .wrap { max-width: 1040px; margin: 0 auto; padding: 0 16px; }
+  header { padding: 28px 0 8px; }
+  h1 { margin: 0; font-size: 26px; letter-spacing: .02em; }
+  .sub { color: var(--muted); margin: 4px 0 0; }
+  .toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin: 18px 0 12px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip {
+    border: 1px solid var(--border); background: var(--surface); color: var(--text);
+    padding: 5px 12px; border-radius: 999px; cursor: pointer; font: inherit; font-size: 14px;
+  }
+  .chip[aria-pressed="true"] { background: var(--text); color: var(--bg); border-color: var(--text); }
+  .controls { display: flex; flex-wrap: wrap; gap: 8px; margin-left: auto; }
+  input[type=search], select {
+    font: inherit; font-size: 14px; padding: 6px 10px; border-radius: 8px;
+    border: 1px solid var(--border); background: var(--surface); color: var(--text);
+  }
+  input[type=search] { width: 200px; }
+  .meta { color: var(--muted); font-size: 13px; margin-bottom: 8px; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; }
+  table { width: 100%; border-collapse: collapse; }
+  th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--border); white-space: nowrap; }
+  th { font-size: 13px; color: var(--muted); font-weight: 600; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  tbody tr { cursor: pointer; }
+  tbody tr:hover { background: color-mix(in srgb, var(--accent) 6%, transparent); }
+  tbody tr:last-child td { border-bottom: 0; }
+  .model { font-weight: 600; }
+  .brand { color: var(--muted); font-size: 13px; }
+  .best { color: var(--good); background: var(--good-bg); border-radius: 6px; padding: 1px 6px; font-weight: 600; }
+  .none { color: var(--muted); }
+  .gap { font-weight: 600; }
+  .table-scroll { overflow-x: auto; }
+  .empty { padding: 32px; text-align: center; color: var(--muted); }
+  dialog {
+    width: min(760px, calc(100vw - 32px)); max-height: calc(100vh - 32px); padding: 0;
+    border: 1px solid var(--border); border-radius: 14px; background: var(--surface); color: var(--text);
+  }
+  dialog::backdrop { background: rgb(0 0 0 / .45); }
+  .dlg-head { display: flex; justify-content: space-between; align-items: start; gap: 12px; padding: 18px 20px 0; }
+  .dlg-head h2 { margin: 0; font-size: 20px; }
+  .close { font: inherit; font-size: 22px; line-height: 1; border: 0; background: none; color: var(--muted); cursor: pointer; }
+  .dlg-body { padding: 12px 20px 20px; }
+  .chart-box { position: relative; height: 300px; }
+  .offers { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 8px; margin-top: 14px; }
+  .offer { border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; }
+  .offer .p { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .offer .n { font-size: 12px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .offer a { color: var(--accent); font-size: 13px; }
+  .dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 6px; vertical-align: 1px; }
+  footer { color: var(--muted); font-size: 13px; padding: 24px 0 40px; }
+  footer p { margin: 4px 0; }
+  @media (max-width: 640px) {
+    .controls { margin-left: 0; width: 100%; }
+    input[type=search] { flex: 1; width: auto; }
+    th, td { padding: 8px 6px; font-size: 13px; }
+    .brand { font-size: 12px; }
+    .hide-sm { display: none; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>家電比價</h1>
+    <p class="sub">同一個型號，在燦坤、PChome、Yahoo 購物中心各賣多少？每天晚上自動更新。</p>
+  </header>
+
+  <div class="toolbar">
+    <div class="chips" id="cats" role="group" aria-label="分類"></div>
+    <div class="controls">
+      <input type="search" id="q" placeholder="搜尋型號或廠牌" aria-label="搜尋型號或廠牌">
+      <select id="sort" aria-label="排序">
+        <option value="gap">價差比例大→小</option>
+        <option value="low">最低價 低→高</option>
+        <option value="model">型號 A→Z</option>
+      </select>
+      <select id="date" aria-label="資料日期"></select>
+    </div>
+  </div>
+
+  <div class="meta" id="meta">載入中…</div>
+  <div class="card table-scroll">
+    <table>
+      <thead>
+        <tr>
+          <th>型號</th>
+          <th class="hide-sm">分類</th>
+          <th class="num"><span class="dot" style="background:var(--c-tk3c)"></span>燦坤</th>
+          <th class="num"><span class="dot" style="background:var(--c-pchome)"></span>PChome</th>
+          <th class="num"><span class="dot" style="background:var(--c-yahoo)"></span>Yahoo</th>
+          <th class="num">價差</th>
+        </tr>
+      </thead>
+      <tbody id="rows"></tbody>
+    </table>
+    <div class="empty" id="empty" hidden>沒有符合的型號</div>
+  </div>
+
+  <footer>
+    <p>點任一列可看該型號的每日價格走勢與賣場連結。價格為當天晚上抓到的各平台最低售價，實際價格以各平台頁面為準。</p>
+    <p>資料來源：燦坤、PChome 24h、Yahoo 購物中心公開商品頁（momo 擋程式存取，未納入）。本站為課程專題，與各平台無關。</p>
+  </footer>
+</div>
+
+<dialog id="dlg" aria-labelledby="dlg-title">
+  <div class="dlg-head">
+    <div>
+      <h2 id="dlg-title"></h2>
+      <div class="brand" id="dlg-brand"></div>
+    </div>
+    <button class="close" id="dlg-close" aria-label="關閉">×</button>
+  </div>
+  <div class="dlg-body">
+    <div class="chart-box"><canvas id="chart" aria-label="每日最低價走勢"></canvas></div>
+    <div class="offers" id="offers"></div>
+  </div>
+</dialog>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.6/dist/chart.umd.min.js"></script>
+<script src="/app.js"></script>
+</body>
+</html>

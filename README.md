@@ -23,6 +23,7 @@
 - 每天把資料經 GCS 同步到 BigQuery 資料倉儲（Raw → Fact / Dim → DataMart）
 - 使用 Superset 建立「家電比價」dashboard（每日比價、長期分析、規格分析），另有 Looker Studio 報表
 - 使用 FastAPI 提供商品、價格歷史與追蹤清單比價查詢
+- 公開網站：任何人都能用瀏覽器查追蹤型號在三個平台的價格與每日走勢，見[公開網站](#公開網站)
 - 使用 Docker Compose（開發）與 Docker Swarm（部署）容器化所有服務，GitHub Actions 自動 build 並推送 image
 - 部署在 GCP Compute Engine VM 上 24 小時執行，筆電關機也會每天自動爬取
 
@@ -51,6 +52,8 @@
 tk3c-price-tracker/
 ├── app/                           # 所有 Python 程式
 │   ├── main.py                    # FastAPI 查詢 API（商品、價格歷史、追蹤清單比價）
+│   ├── web.py                     # 公開網站（只開放追蹤清單比價，唯讀帳號、請求上限）
+│   ├── static/                    # 公開網站的頁面（index.html、app.js）
 │   ├── celery_app.py              # Celery 設定（beat 排程在 swarm 已停用，改由 Airflow 負責）
 │   ├── tasks.py                   # Celery 爬蟲任務（含自動重試）
 │   ├── producer.py                # 把 19 個爬蟲任務（每個網站一條 chain）送進 RabbitMQ，給 Airflow DockerOperator 呼叫
@@ -682,6 +685,50 @@ WHERE 抓取日期 = CURDATE() AND 型號 IN (
 )
 ORDER BY 型號, 售價;
 ```
+
+## 公開網站
+
+給一般人用的比價頁：選分類、搜尋型號，看燦坤、PChome、Yahoo 當天的最低價（最便宜的標綠色），點一列看該型號每天的價格走勢和賣場連結。
+
+- 網址：`http://<VM 外部 IP>/`（VM 已有 `http-server` 網路標記，GCP 預設防火牆規則 `default-allow-http` 開放 80 port）
+- 程式：`app/web.py`（和內部 API `app/main.py` 分開，共用追蹤清單的查詢函式），頁面在 `app/static/`，圖表用 Chart.js
+- swarm service：`tk3c_web`（`docker-compose-swarm.yml`），和其他服務用同一個 image
+
+| API | 說明 |
+|---|---|
+| `GET /api/dates` | 有資料的日期（新到舊） |
+| `GET /api/compare?date=2026-11-16` | 每個追蹤型號在各平台的最低價、價差比例 |
+| `GET /api/history/{型號}` | 單一型號每天在各平台的最低價 |
+
+### 安全設計
+
+對外公開的服務只放必要的東西：
+
+- **唯讀帳號** `web_reader`：只有 `watchlist`、`watch_price_daily` 兩張表的 `SELECT` 權限，就算程式有漏洞也改不了、看不到其他資料
+- **不帶 `.env`**：service 只拿到 `web_reader` 的連線資訊，container 裡沒有 root 和其他服務的密碼
+- **只開放 3 個查詢**：內部 API（`/products`、`/price-changes`…）、`/docs`、`/openapi.json` 都不在公開網站上；phpMyAdmin、Airflow、Superset 等管理介面仍只限 `allow-admin-ui` 規則裡的 IP
+- **請求上限**：每個 IP 每分鐘最多 60 次 `/api` 請求，超過回 429（port 用 `mode: host`，程式才看得到訪客真正的 IP）
+- **頁面防護**：商品名稱一律以純文字放進頁面、賣場連結只接受 http(s)；回應帶 Content-Security-Policy 等安全 header
+- 目前只有 http（沒有網域就無法申請 HTTPS 憑證）；之後若有網域，可在前面加 Caddy 自動取得憑證
+
+### 第一次部署
+
+1. 建立唯讀帳號（在 VM 上執行，密碼記在 VM 的 `.env`）：
+
+   ```bash
+   cd ~/tk3c-price-tracker
+   echo "WEB_DB_PASSWORD=$(openssl rand -hex 16)" >> .env
+   set -a; source .env; set +a
+   docker exec $(docker ps -q -f name=tk3c_mysql) sh -c "mysql -uroot -p\"\$MYSQL_ROOT_PASSWORD\" -e \"
+     CREATE USER IF NOT EXISTS 'web_reader'@'%' IDENTIFIED BY '$WEB_DB_PASSWORD';
+     GRANT SELECT ON tk3c_price_tracker.watchlist TO 'web_reader'@'%';
+     GRANT SELECT ON tk3c_price_tracker.watch_price_daily TO 'web_reader'@'%';\""
+   ```
+
+2. 照 [GCP 部署 → 更新程式](#更新程式) 的方式 `git pull` 後重新 `docker stack deploy` tk3c stack，會多出 `tk3c_web`
+3. 確認：`curl -s localhost/health` 回 `{"status":"ok"}`，再用瀏覽器開 `http://<VM 外部 IP>/`
+
+本機測試（不用 Docker）：`uvicorn app.web:app --port 8123`，環境變數 `DB_HOST`、`DB_PORT`、`MYSQL_USER`、`MYSQL_PASSWORD`、`MYSQL_DATABASE` 指向任一個有這兩張表權限的帳號。
 
 ## 團隊分工
 
